@@ -40,110 +40,121 @@
             element: document.body,
             engine: engine,
             options: {
-                width: 800,
-                height: 600,
+                width: 1200,
+                height: 800,
                 wireframes: false, // <-- important
                 // showAngleIndicator: true,
             }
         });
 
         // create two boxes and a ground
-        let bodies = []
-        let constr = []
-        let diameter = 5;
-        let num = 0
-        let lengthOfConstraint = diameter * 10
-        let standardParticleOptions = {
-            restitution: 0,
-            friction: 1,
-            render: {
-                fillStyle: 'red',
-                lineWidth: 0
-            }
-        }
-        for (let i = 0; i < num; i++) {
-            bodies.push(Bodies.circle(5 * (i % 10) + 200, (i % 10) * 5 + 20, diameter, standardParticleOptions))
+        // let bodies = []
+        // let constr = []
+        let diameter = 4;
+        // let num = 0
+        // let lengthOfConstraint = diameter * 10
+        // let standardParticleOptions = {
+        //     restitution: 0,
+        //     friction: 1,
+        //     render: {
+        //         fillStyle: 'red',
+        //         lineWidth: 0
+        //     }
+        // }
+        // for (let i = 0; i < num; i++) {
+        //     bodies.push(Bodies.circle(5 * (i % 10) + 200, (i % 10) * 5 + 20, diameter, standardParticleOptions))
 
-        }
-
-
-
-        const constraintInterface = {
-
-            pointA: { x: 0, y: 0 },
-            pointB: { x: 0, y: 0 },
-            length: lengthOfConstraint,
-            angularStiffness: 0.9,
-            stiffness: 0.9,
-            damping: 0,
-            render: {
-                visible: true,
-                anchors: false,
-                lineWidth: 1,
-            }
-        }
-
-        for (let i = 1; i < num; i++) {
+        // }
 
 
 
+        // const constraintInterface = {
 
-            if (bodies[i - 1]) {
-                constr.push(Constraint.create({
-                    ...constraintInterface,
-                    bodyA: bodies[i],
-                    bodyB: bodies[i - 1]
-                }))
-            }
+        //     pointA: { x: 0, y: 0 },
+        //     pointB: { x: 0, y: 0 },
+        //     length: lengthOfConstraint,
+        //     angularStiffness: 1,
+        //     stiffness: 1,
+        //     damping: 0,
+        //     render: {
+        //         visible: true,
+        //         anchors: false,
+        //         lineWidth: 1,
+        //     }
+        // }
 
-            if (bodies[i - 2]) {
-                constr.push(Constraint.create({
-                    ...constraintInterface,
-                    bodyA: bodies[i - 1],
-                    bodyB: bodies[i - 2]
-                }))
-
-                constr.push(Constraint.create({
-                    ...constraintInterface,
-                    bodyA: bodies[i],
-                    bodyB: bodies[i - 2]
-                }))
-
-            }
+        // for (let i = 1; i < num; i++) {
 
 
-            if (bodies[i - 3]) {
-                constr.push(Constraint.create({
-                    ...constraintInterface,
-                    bodyA: bodies[i - 2],
-                    bodyB: bodies[i - 3]
-                }))
-                constr.push(Constraint.create({
-                    ...constraintInterface,
-                    bodyA: bodies[i - 3],
-                    bodyB: bodies[i - 1]
-                }))
-                constr.push(Constraint.create({
-                    ...constraintInterface,
-                    bodyA: bodies[i],
-                    bodyB: bodies[i - 3]
-                }))
-            }
 
 
+        //     if (bodies[i - 1]) {
+        //         constr.push(Constraint.create({
+        //             ...constraintInterface,
+        //             bodyA: bodies[i],
+        //             bodyB: bodies[i - 1]
+        //         }))
+        //     }
+
+        //     if (bodies[i - 2]) {
+        //         constr.push(Constraint.create({
+        //             ...constraintInterface,
+        //             bodyA: bodies[i - 1],
+        //             bodyB: bodies[i - 2]
+        //         }))
+
+        //         constr.push(Constraint.create({
+        //             ...constraintInterface,
+        //             bodyA: bodies[i],
+        //             bodyB: bodies[i - 2]
+        //         }))
+
+        //     }
+
+
+        //     if (bodies[i - 3]) {
+        //         constr.push(Constraint.create({
+        //             ...constraintInterface,
+        //             bodyA: bodies[i - 2],
+        //             bodyB: bodies[i - 3]
+        //         }))
+        //         constr.push(Constraint.create({
+        //             ...constraintInterface,
+        //             bodyA: bodies[i - 3],
+        //             bodyB: bodies[i - 1]
+        //         }))
+        //         constr.push(Constraint.create({
+        //             ...constraintInterface,
+        //             bodyA: bodies[i],
+        //             bodyB: bodies[i - 3]
+        //         }))
+        //     }
 
 
 
 
 
-        }
+
+
+        // }
 
         // var boxA = Bodies.circle(400, 200, 1);
         // var boxB = Bodies.rectangle(450, 50, 80, 80);
-        var ground = Bodies.rectangle(400, 610, 810, 60, { isStatic: true, render: { fillStyle: 'black' } });
+
+
+        var ground = Bodies.rectangle(0, 810, 3000, 200, {
+            restitution: 0,
+            friction: 0.5,
+            slop: 0,
+            render: {
+                fillStyle: 'red',
+                lineWidth: 0
+            },
+            isStatic: true, render: { fillStyle: 'black' }
+        });
 
         // add all of the bodies to the world
-        Composite.add(engine.world, [...bodies, ground]);
+        Composite.add(engine.world, [ground]);
 
 
 
@@ -164,7 +175,7 @@
         engine.world.gravity.y = 0;
 
         World.add(engine.world, mouseConstraint);
-        World.add(engine.world, constr);
+        // World.add(engine.world, constr);
 
 
 
@@ -215,7 +226,6 @@
                 let closestP = findTwoClosestParticles(b.position.x, b.position.y)
                 //GET THE CLOSEST BODIES
 
-
                 let counterOfConstraints = 0
                 for (let i = 0; i < closestP.length; i++) {
                     if (counterOfConstraints >= numberOfAutomaticConnections) break
@@ -224,12 +234,24 @@
                     if (!closeParticle) continue
                     if (closeParticle.body == b) continue
                     if (closeParticle.dist == 0) continue
+                    if (closeParticle.dist > diameter * 4) continue
 
                     let newConstraint = Constraint.create({
-                        ...constraintInterface,
+                        pointA: { x: 0, y: 0 },
+                        pointB: { x: 0, y: 0 },
+                        // length: diameter * 2,
+                        angularStiffness: 0.9,
+                        stiffness: 0.9,
+                        damping: 0.01,
+                        render: {
+                            visible: true,
+                            anchors: false,
+                            strokeStyle: '#ffffff22',
+                            lineWidth: 1,
+                        },
                         bodyA: closeParticle.body,
                         bodyB: b,
-                        length: undefined
+
                     })
 
                     World.add(engine.world, [newConstraint]);
@@ -247,38 +269,70 @@
         }
 
 
+        function removeParticle(x, y) {
+
+
+            let closeP = findTwoClosestParticles(x, y)
+            if (!closeP[0]) return
+
+            if (dist(x, y, closeP[0].body.position.x, closeP[0].body.position.y) < diameter * 3) {
+                World.remove(engine.world, closeP[0].body);
+            }
+
+        }
+
+        function addParticles(x, y) {
+            let arrOfBodies = []
+            let bodyOptions = {
+                restitution: 0,
+                friction: 0.5,
+                slop: -diameter,
+                render: {
+                    fillStyle: 'red',
+                    lineWidth: 0
+                }
+            }
+            let numOfParticlesToAdd = 1
+
+            for (let i = 0; i < numOfParticlesToAdd; i++) {
+                let newX = x + (i % 3) * diameter / 2
+                let newY = y + Math.floor(i / 3) * diameter / 2
+                arrOfBodies.push(Bodies.circle(newX, newY, diameter, bodyOptions))
+            }
+
+            Composite.add(engine.world, arrOfBodies);
+        }
+
         function addClickListenerToCanvas() {
             let canvas = document.querySelector("canvas")
-            canvas.onclick = e => {
+            canvas.onmouseleave = e => window.isDown = false
+            canvas.onmousedown = e => {
+                window.isDown = e.which
+            }
+            canvas.onmouseup = e => {
+                window.isDown = false
+            }
+            canvas.onmousemove = e => {
+                if (!window.isDown) return
                 let box = canvas.getBoundingClientRect()
                 let x = e.x - box.x
                 let y = e.y - box.y
-                console.log(x, y)
 
-                // let closePArticles = findTwoClosestParticles(x, y)
-
-
-
-                let body = Bodies.circle(x, y, diameter, standardParticleOptions)
-                Composite.add(engine.world, [body]);
-
-                // const numberOfAutomaticConnections = 3
-                // for (let i = 0; i < numberOfAutomaticConnections; i++) {
-                //     let closeParticle = closePArticles[i]
-                //     if (!closeParticle) continue
-
-                //     let newConstraint = Constraint.create({
-                //         ...constraintInterface,
-                //         bodyA: closeParticle.body,
-                //         bodyB: body,
-                //         length: undefined
-                //     })
-
-                //     World.add(engine.world, [newConstraint]);
-
-                // }
+                if (window.isDown == 2) {
+                    //REMOVE PARTICLES
 
 
+                    removeParticle(x, y)
+
+                    return
+                } else if (window.isDown == 3) {
+                    //ADD PARTICLES
+
+
+                    addParticles(x, y)
+
+
+                }
 
             }
         }
@@ -290,7 +344,7 @@
     <button onclick="    engine.world.gravity.y = 1">turn gravity on</button>
     <br>
     <button onclick="    engine.world.gravity.y = 0">turn gravity off</button>
-    <button onclick=" addAutomaticConnections(4)">add connections</button>
+    <button onclick=" addAutomaticConnections(18);">add connections</button>
 </body>
 
 </html>
