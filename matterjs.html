@@ -63,6 +63,9 @@
         // let bodies = []
         // let constr = []
         let diameter = 4;
+        let maxNumberOfConnectionsPerBody = 10
+        const maxDistanceToAttach = diameter * 10
+
         // let num = 0
         // let lengthOfConstraint = diameter * 10
         // let standardParticleOptions = {
@@ -158,6 +161,7 @@
             restitution: 0,
             friction: 0.5,
             slop: 0,
+            label: "piso",
             render: {
                 fillStyle: 'red',
                 lineWidth: 0
@@ -203,8 +207,76 @@
         // run the engine
         Runner.run(runner, engine);
 
+
+
+        function findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(b1, b2) {
+            let which = engine.world.constraints.filter(k => {
+                return ((k.bodyA || {}).id == b1.id && (k.bodyB || {}).id == b2.id) || ((k.bodyB || {}).id == b1.id && (k.bodyA || {}).id == b2.id)
+            })
+            if (which.length > 0) return which[0]
+        }
+
+
         //COLLITION DETECTION
-        // Matter.Events.on(engine, "collisionActive", (e) => console.log(e))
+
+
+        function collisionHandbler(e) {
+            for (let p of e.pairs) {
+                // console.log(p)
+                // debugger
+                // console.log(p.bodyA, p.bodyB)
+
+                // if (p.bodyA.id != "piso") p.bodyA.isSensor = true
+                // if (p.bodyB.id != "piso") p.bodyB.isSensor = true
+
+
+
+
+                let maxConnectionsPerParticle = 3
+
+                if (p.bodyA.id == "piso" || p.bodyB.id == "piso") continue
+                if (findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(p.bodyA, p.bodyB)) continue
+                if ((p.bodyA.constraints || []).length > 6 || (p.bodyB.constraints || []).length >= maxConnectionsPerParticle) continue
+
+                else console.log("Agregando constraint entre", p.bodyA, p.bodyB)
+                let newConstraint = Constraint.create({
+                    pointA: { x: 0, y: 0 },
+                    pointB: { x: 0, y: 0 },
+                    length: diameter,
+                    angularStiffness: 0.9,
+                    // isSensor: false,
+                    // isSleeping: true,
+                    stiffness: 0.9,
+                    damping: 0.01,
+                    render: {
+                        visible: true,
+                        anchors: false,
+                        strokeStyle: getRandomBrownishColor(0, 0.12),
+                        lineWidth: diameter * 3,
+                    },
+                    bodyA: p.bodyA,
+                    bodyB: p.bodyB,
+
+                })
+
+                if (!Array.isArray(p.bodyA.constraints)) p.bodyA.constraints = []
+                p.bodyA.constraints.push(newConstraint)
+
+                if (!Array.isArray(p.bodyB.constraints)) p.bodyB.constraints = []
+                p.bodyB.constraints.push(newConstraint)
+
+
+                World.add(engine.world, [newConstraint]);
+
+            }
+
+        }
+
+
+
+        // Matter.Events.on(engine, "collisionActive", (e) => { collisionHandbler(e) })
+
+
 
 
         function dist(x1, y1, x2, y2) {
@@ -217,7 +289,7 @@
             let arr = []
             for (let i = 0; i < engine.world.bodies.length; i++) {
                 let b = engine.world.bodies[i]
-                if (b.label == "Rectangle Body") continue
+                if (b.label == "piso") continue
                 let distance = dist(x, y, b.position.x, b.position.y)
                 arr.push({ body: b, distance: distance })
             }
@@ -228,25 +300,41 @@
 
 
 
-        function addAutomaticConnections(numberOfAutomaticConnections) {
-            if (numberOfAutomaticConnections == undefined) numberOfAutomaticConnections = 3
+        function addAutomaticConnections(arr) {
+            // console.log("#add automatic", numberOfAutomaticConnections, arr)
+            // if (numberOfAutomaticConnections == undefined) numberOfAutomaticConnections = 3
 
-            for (let i = 0; i < engine.world.bodies.length; i++) {
+            let howManyConnectionsWeMadeNow = 0
+
+            arr = arr ? arr : engine.world.bodies
+            for (let i = 0; i < arr.length; i++) {
                 //EACH BODY
-                let b = engine.world.bodies[i]
-                if (b.label == "Rectangle Body") continue
+                let b = arr[i]
+                if (b.label == "piso") continue
                 let closestP = findTwoClosestParticles(b.position.x, b.position.y)
-                //GET THE CLOSEST BODIES
 
-                let counterOfConstraints = 0
+                closestP = (closestP || []).filter(k => k.distance < maxDistanceToAttach)
+
+                //GET THE CLOSEST BODIES                
                 for (let i = 0; i < closestP.length; i++) {
-                    if (counterOfConstraints >= numberOfAutomaticConnections) break
+                    // if (counterOfConstraints >= numberOfAutomaticConnections) break
                     let closeParticle = closestP[i]
+
+
+
 
                     if (!closeParticle) continue
                     if (closeParticle.body == b) continue
-                    if (closeParticle.dist == 0) continue
-                    if (closeParticle.dist > diameter * 4) continue
+                    if (closeParticle.distance == 0) continue
+                    if (findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(closeParticle, b)) continue
+                    //CHECK HOW MANY CONSTRAINTS IT ALREADY HAS
+                    //I KEEP TRACK OF THIS MYSELF IN EACH BODY
+                    if ((b.constraints || []).length >= maxNumberOfConnectionsPerBody || (closeParticle.constraints || []).length >= maxNumberOfConnectionsPerBody) {
+                        break
+                    }
+
+                    // alert(1)
+
 
                     let newConstraint = Constraint.create({
                         pointA: { x: 0, y: 0 },
@@ -265,19 +353,27 @@
                         bodyB: b,
 
                     })
-
+                    //ADD CONSTRAINT TO THE WORLD
                     World.add(engine.world, [newConstraint]);
-                    counterOfConstraints++
 
-                }
+                    //ADD CONSTRAINT TO BOTH BODIES, TO KEEP TRACK OF THEM
+                    if (!Array.isArray(b.constraints)) b.constraints = []
+                    b.constraints.push(newConstraint)
+
+                    if (!Array.isArray(closeParticle.constraints)) closeParticle.constraints = []
+                    closeParticle.constraints.push(newConstraint)
+
+                    howManyConnectionsWeMadeNow++
+
+
+                }//for
 
 
 
 
-            }
+            }//for
 
-
-
+            console.log("#we added ", howManyConnectionsWeMadeNow, "new constraints")
         }
 
 
@@ -288,6 +384,10 @@
             if (!closeP[0]) return
 
             if (dist(x, y, closeP[0].body.position.x, closeP[0].body.position.y) < diameter * 3) {
+                for (let constr of closeP[0].body.constraints) {
+                    World.remove(engine.world, constr);
+
+                }
                 World.remove(engine.world, closeP[0].body);
             }
 
@@ -311,15 +411,19 @@
 
 
             let bodyOptions = {
-                restitution: 0,
+                restitution: 0.1,
+                // mass: 9999,
                 friction: 0.5,
-                slop: -diameter * 0.9,
+                slop: -diameter * 0.35,
+                // isSensor: true,
                 render: {
                     fillStyle: getRandomBrownishColor(0.66, 1),
                     lineWidth: diameter * 2,
                     strokeStyle: getRandomBrownishColor(0.3, 0.7)
 
-                }
+                },
+                // density: 99999999999999
+                // mass: 0
             }
             let numOfParticlesToAdd = 1
 
@@ -329,7 +433,29 @@
                 arrOfBodies.push(Bodies.circle(newX, newY, diameter, bodyOptions))
             }
 
+
+
             Composite.add(engine.world, arrOfBodies);
+
+
+            // addAutomaticConnections( arrOfBodies)
+        }
+
+        function indicateWhichParticleItIs(x, y) {
+            let closeP = findTwoClosestParticles(x, y)
+            if (!closeP[0]) return
+
+            if (dist(x, y, closeP[0].body.position.x, closeP[0].body.position.y) < diameter * 2) {
+                let p = closeP[0].body
+                window.tempParticle = p
+                console.log(p)
+            }
+        }
+
+        function removeIsSensorFromAllParticles() {
+            for (let p of engine.world.bodies) {
+                p.isSensor = false
+            }
         }
 
         function addClickListenerToCanvas() {
@@ -337,6 +463,14 @@
             canvas.onmouseleave = e => window.isDown = false
             canvas.onmousedown = e => {
                 window.isDown = e.which
+                let box = canvas.getBoundingClientRect()
+                let x = e.x - box.x
+                let y = e.y - box.y
+                if (e.which == 1) indicateWhichParticleItIs(x, y)
+                else if (e.which == 3) addParticles(x, y)
+
+
+
             }
             canvas.onmouseup = e => {
                 window.isDown = false
@@ -373,7 +507,10 @@
     <button onclick="    engine.world.gravity.y = 1">turn gravity on</button>
     <br>
     <button onclick="    engine.world.gravity.y = 0">turn gravity off</button>
-    <button onclick=" addAutomaticConnections(18);">add connections</button>
+    <button onclick=" addAutomaticConnections();">add connections</button>
+
+    <button onclick=" removeIsSensorFromAllParticles();">remove isSensor</button>
+
 </body>
 
 </html>
