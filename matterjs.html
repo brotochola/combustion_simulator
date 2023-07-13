@@ -7,9 +7,21 @@
             background-size: contain;
         } */
 
-        canvas.a {
-            filter: blur(3px) contrast(81.5) contrast(99) contrast(99) contrast(99) contrast(99) contrast(99) contrast(99);
-            background: transparent !important;
+        html,
+        body {
+            padding: 0px;
+            margin: 0px;
+        }
+
+        canvas {
+            /* filter: blur(3px) contrast(81.5) contrast(99) contrast(99) contrast(99) contrast(99) contrast(99) contrast(99); */
+            /* background: transparent !important; */
+            /* width: 100vw; */
+            /* height: 90vh; */
+
+            margin: 0px;
+            left: 0px;
+            top: 0px;
         }
     </style>
 </head>
@@ -40,8 +52,8 @@
             element: document.body,
             engine: engine,
             options: {
-                width: 1200,
-                height: 800,
+                width: window.innerWidth,
+                height: window.innerHeight * 0.8,
                 wireframes: false, // <-- important
                 // showAngleIndicator: true,
             }
@@ -246,8 +258,8 @@
                         render: {
                             visible: true,
                             anchors: false,
-                            strokeStyle: '#ffffff22',
-                            lineWidth: 1,
+                            strokeStyle: getRandomBrownishColor(0, 0.12),
+                            lineWidth: diameter * 3,
                         },
                         bodyA: closeParticle.body,
                         bodyB: b,
@@ -281,15 +293,32 @@
 
         }
 
+        function getRandomBrownishColor(minA, maxA) {
+            let r = Math.floor(150 + Math.random() * 45)
+            let g = Math.floor(20 + Math.random() * 40)
+            let b = Math.floor(Math.random() * 50)
+
+            if (minA == undefined) minA = 0
+            if (maxA == undefined) maxA = 1
+
+            let a = (minA + (maxA - minA) * Math.random()).toFixed(2)
+            return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+        }
+
         function addParticles(x, y) {
             let arrOfBodies = []
+
+
+
             let bodyOptions = {
                 restitution: 0,
                 friction: 0.5,
-                slop: -diameter,
+                slop: -diameter * 0.9,
                 render: {
-                    fillStyle: 'red',
-                    lineWidth: 0
+                    fillStyle: getRandomBrownishColor(0.66, 1),
+                    lineWidth: diameter * 2,
+                    strokeStyle: getRandomBrownishColor(0.3, 0.7)
+
                 }
             }
             let numOfParticlesToAdd = 1
