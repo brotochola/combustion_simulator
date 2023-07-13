@@ -210,8 +210,14 @@
 
 
         function findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(b1, b2) {
+
+
+
             let which = engine.world.constraints.filter(k => {
-                return ((k.bodyA || {}).id == b1.id && (k.bodyB || {}).id == b2.id) || ((k.bodyB || {}).id == b1.id && (k.bodyA || {}).id == b2.id)
+                return ((k.bodyA || {}).id == b1.id &&
+                    (k.bodyB || {}).id == b2.id) ||
+                    ((k.bodyB || {}).id == b1.id &&
+                        (k.bodyA || {}).id == b2.id)
             })
             if (which.length > 0) return which[0]
         }
@@ -326,7 +332,7 @@
                     if (!closeParticle) continue
                     if (closeParticle.body == b) continue
                     if (closeParticle.distance == 0) continue
-                    if (findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(closeParticle, b)) continue
+                    if (findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(closeParticle.body, b)) continue
                     //CHECK HOW MANY CONSTRAINTS IT ALREADY HAS
                     //I KEEP TRACK OF THIS MYSELF IN EACH BODY
                     if ((b.constraints || []).length >= maxNumberOfConnectionsPerBody || (closeParticle.constraints || []).length >= maxNumberOfConnectionsPerBody) {
@@ -346,7 +352,7 @@
                         render: {
                             visible: true,
                             anchors: false,
-                            strokeStyle: getRandomBrownishColor(0, 0.12),
+                            strokeStyle: getRandomBrownishColor(0.1, 0.22),
                             lineWidth: diameter * 3,
                         },
                         bodyA: closeParticle.body,
@@ -360,8 +366,8 @@
                     if (!Array.isArray(b.constraints)) b.constraints = []
                     b.constraints.push(newConstraint)
 
-                    if (!Array.isArray(closeParticle.constraints)) closeParticle.constraints = []
-                    closeParticle.constraints.push(newConstraint)
+                    if (!Array.isArray(closeParticle.body.constraints)) closeParticle.body.constraints = []
+                    closeParticle.body.constraints.push(newConstraint)
 
                     howManyConnectionsWeMadeNow++
 
