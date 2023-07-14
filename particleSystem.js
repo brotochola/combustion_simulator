@@ -56,7 +56,7 @@ class ParticleSystem {
       },
     });
 
-    this.engine.world.gravity.y = 1;
+    this.engine.world.gravity.y = 0;
 
     this.world.add(this.engine.world, mouseConstraint);
     // World.add(engine.world, constr);
@@ -86,7 +86,7 @@ class ParticleSystem {
       let p = closeP[0].body;
       window.tempParticle = p;
       //DEBUG
-      p.particle.temperature += 10;
+      p.particle.temperature += 200;
       console.log(p);
     }
   }
@@ -191,7 +191,7 @@ class ParticleSystem {
   }
 
   addParticle(x, y) {
-    console.log("add particule", x, y);
+    // console.log("add particule", x, y);
 
     const particle = new Particle(x, y, "wood", 20, this);
     particle.particles = this.particles;
@@ -271,4 +271,93 @@ class ParticleSystem {
   //       }
   //     }
   //   }
+
+  findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(b1, b2) {
+    let which = this.engine.world.constraints.filter((k) => {
+      return (
+        ((k.bodyA || {}).id == b1.id && (k.bodyB || {}).id == b2.id) ||
+        ((k.bodyB || {}).id == b1.id && (k.bodyA || {}).id == b2.id)
+      );
+    });
+    if (which.length > 0) return which[0];
+  }
+
+  addAutomaticConnections(arr) {
+    // console.log("#add automatic", numberOfAutomaticConnections, arr)
+    // if (numberOfAutomaticConnections == undefined) numberOfAutomaticConnections = 3
+
+    let howManyConnectionsWeMadeNow = 0;
+
+    arr = arr ? arr : this.particles;
+    for (let i = 0; i < arr.length; i++) {
+      //EACH BODY
+      let b = arr[i].body;
+
+      let closestP = this.findTwoClosestParticles(b.position.x, b.position.y);
+
+      closestP = (closestP || []).filter(
+        (k) => k.distance < this.config.maxDistanceToAttach
+      );
+
+      //GET THE CLOSEST BODIES
+      for (let i = 0; i < closestP.length; i++) {
+        // if (counterOfConstraints >= numberOfAutomaticConnections) break
+        let closeParticle = closestP[i];
+
+        if (!closeParticle) continue;
+        if (closeParticle.body == b) continue;
+        if (closeParticle.distance == 0) continue;
+        if (
+          this.findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(
+            closeParticle.body,
+            b
+          )
+        )
+          continue;
+        //CHECK HOW MANY CONSTRAINTS IT ALREADY HAS
+        //I KEEP TRACK OF THIS MYSELF IN EACH BODY
+        if (
+          (b.constraints || []).length >=
+            this.config.maxNumberOfConnectionsPerBody ||
+          (closeParticle.constraints || []).length >=
+            this.config.maxNumberOfConnectionsPerBody
+        ) {
+          break;
+        }
+
+        // alert(1)
+
+        let newConstraint = this.Matter.Constraint.create({
+          pointA: { x: 0, y: 0 },
+          pointB: { x: 0, y: 0 },
+          // length: diameter * 2,
+          angularStiffness: 0.9,
+          stiffness: 0.9,
+          damping: 0.01,
+          render: {
+            visible: true,
+            anchors: false,
+            strokeStyle: makeRGBA(getRandomBrownishColor(0.1, 0.22)),
+            lineWidth: this.config.diameter * 3,
+          },
+          bodyA: closeParticle.body,
+          bodyB: b,
+        });
+        //ADD CONSTRAINT TO THE WORLD
+        this.world.add(this.engine.world, [newConstraint]);
+
+        //ADD CONSTRAINT TO BOTH BODIES, TO KEEP TRACK OF THEM
+        if (!Array.isArray(b.constraints)) b.constraints = [];
+        b.constraints.push(newConstraint);
+
+        if (!Array.isArray(closeParticle.body.constraints))
+          closeParticle.body.constraints = [];
+        closeParticle.body.constraints.push(newConstraint);
+
+        howManyConnectionsWeMadeNow++;
+      } //for
+    } //for
+
+    console.log("#we added ", howManyConnectionsWeMadeNow, "new constraints");
+  }
 }
