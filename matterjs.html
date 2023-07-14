@@ -63,7 +63,7 @@
         // let bodies = []
         // let constr = []
         let diameter = 4;
-        let maxNumberOfConnectionsPerBody = 10
+        let maxNumberOfConnectionsPerBody = 20
         const maxDistanceToAttach = diameter * 10
 
         // let num = 0
@@ -170,7 +170,7 @@
         });
 
         // add all of the bodies to the world
-        Composite.add(engine.world, [ground]);
+        World.add(engine.world, [ground]);
 
 
 
@@ -441,7 +441,7 @@
 
 
 
-            Composite.add(engine.world, arrOfBodies);
+            World.add(engine.world, arrOfBodies);
 
 
             // addAutomaticConnections( arrOfBodies)
