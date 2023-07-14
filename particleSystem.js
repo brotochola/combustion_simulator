@@ -28,6 +28,19 @@ class ParticleSystem {
 
     // this.addEventListenerToMouse();
     this.addClickListenerToCanvas();
+
+    this.addExtraCanvasForFire();
+  }
+
+  addExtraCanvasForFire() {
+    let normalCanvas = document.querySelector("canvas");
+    let fireCanvas = document.createElement("canvas");
+    fireCanvas.id = "fireCanvas";
+    this.fireCanvas = fireCanvas;
+    fireCanvas.width = normalCanvas.width;
+    fireCanvas.height = normalCanvas.height;
+    this.fireContext = fireCanvas.getContext("2d");
+    document.body.appendChild(fireCanvas);
   }
 
   runEngine() {
@@ -200,6 +213,16 @@ class ParticleSystem {
 
   onTick(e) {
     // Update all particles in the system
+
+    setTimeout(() => {
+      this.fireContext.clearRect(
+        0,
+        0,
+        this.fireCanvas.width,
+        this.fireCanvas.height
+      );
+    }, 25);
+
     for (const particle of this.particles) {
       particle.update(e);
     }

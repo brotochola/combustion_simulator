@@ -189,30 +189,32 @@ class Particle {
     // }
   }
 
+  drawFlames() {
+    const context = this.particleSystem.fireCanvas.getContext("2d");
+
+    // Render fire effect when the particle is on fire
+    const radius = this.diameter * 3 + Math.random() * this.diameter * 4;
+
+    const intensity = 120 + Math.random() * 120;
+
+    const gradient = context.createRadialGradient(
+      this.x,
+      this.y,
+      0,
+      this.x,
+      this.y - radius / 4,
+      radius
+    );
+    gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.5)`);
+    gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
+    context.fillStyle = gradient;
+    context.fillRect(this.x - radius, this.y - radius, radius * 2, radius * 4);
+  }
   render() {
     // Render the particle on the canvas
-    // if (this.onFire) {
-    //   // Render fire effect when the particle is on fire
-    //   const radius = 5 + Math.random() * 5;
-    //   const intensity = 60 + Math.random() * 60;
-    //   const gradient = context.createRadialGradient(
-    //     this.x,
-    //     this.y,
-    //     0,
-    //     this.x,
-    //     this.y,
-    //     radius
-    //   );
-    //   gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.1)`);
-    //   gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
-    //   context.fillStyle = gradient;
-    //   context.fillRect(
-    //     this.x - radius,
-    //     this.y - radius,
-    //     radius * 2,
-    //     radius * 2
-    //   );
-    // }
+    if (this.onFire) {
+      this.drawFlames();
+    }
 
     let fillR = this.defaultColor.fillStyle.r;
     let strokeR = this.defaultColor.strokeStyle.r;
