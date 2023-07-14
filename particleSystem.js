@@ -56,7 +56,7 @@ class ParticleSystem {
       },
     });
 
-    this.engine.world.gravity.y = 0;
+    this.engine.world.gravity.y = 1;
 
     this.world.add(this.engine.world, mouseConstraint);
     // World.add(engine.world, constr);
@@ -73,7 +73,19 @@ class ParticleSystem {
     // run the engine
     this.Matter.Runner.run(this.runner, this.engine);
   }
-  indicateWhichParticleItIs() {}
+  indicateWhichParticleItIs(x, y) {
+    let closeP = this.findTwoClosestParticles(x, y);
+    if (!closeP[0]) return;
+
+    if (
+      dist(x, y, closeP[0].body.position.x, closeP[0].body.position.y) <
+      this.config.diameter * 2
+    ) {
+      let p = closeP[0].body;
+      window.tempParticle = p;
+      console.log(p);
+    }
+  }
   findTwoClosestParticles(x, y) {
     let arr = [];
     for (let i = 0; i < this.particles.length; i++) {
@@ -87,21 +99,14 @@ class ParticleSystem {
   }
   removeParticle(x, y) {
     let closePs = this.findTwoClosestParticles(x, y);
-
     if (!closePs[0]) return;
-
     let closest = closePs[0];
-
-    console.log("#closest p", closest.body);
 
     if (
       dist(x, y, closest.body.position.x, closest.body.position.y) <
       this.config.diameter * 3
     ) {
-      for (let constr of closest.body.constraints) {
-        this.world.remove(this.engine.world, constr);
-      }
-      this.world.remove(this.engine.world, closest.body);
+      closest.body.particle.remove();
     }
   }
   addClickListenerToCanvas() {
@@ -186,7 +191,6 @@ class ParticleSystem {
 
     const particle = new Particle(x, y, "wood", 20, this);
     particle.particles = this.particles;
-    particle.i = this.particles.length;
     this.particles.push(particle);
   }
 

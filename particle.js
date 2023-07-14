@@ -57,6 +57,7 @@ class Particle {
     );
 
     this.body.constraints = []; //i need to keep track which constraints each body has
+    this.body.particle = this;
 
     this.world.add(this.engine.world, [this.body]);
   }
@@ -84,6 +85,17 @@ class Particle {
   }
   applyHeat(joules) {
     this.temperature += joules * this.heatCapacity;
+  }
+
+  remove() {
+    for (let constr of this.body.constraints) {
+      this.world.remove(this.engine.world, constr);
+    }
+
+    this.world.remove(this.engine.world, this.body);
+    this.particleSystem.particles = this.particleSystem.particles.filter(
+      (k) => k.body.id != this.body.id
+    );
   }
 
   burn() {
