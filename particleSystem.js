@@ -72,6 +72,8 @@ class ParticleSystem {
 
     // run the engine
     this.Matter.Runner.run(this.runner, this.engine);
+
+    this.Matter.Events.on(this.runner, "tick", (e) => this.onTick(e));
   }
   indicateWhichParticleItIs(x, y) {
     let closeP = this.findTwoClosestParticles(x, y);
@@ -83,6 +85,8 @@ class ParticleSystem {
     ) {
       let p = closeP[0].body;
       window.tempParticle = p;
+      //DEBUG
+      p.particle.temperature += 10;
       console.log(p);
     }
   }
@@ -194,17 +198,12 @@ class ParticleSystem {
     this.particles.push(particle);
   }
 
-  //   update() {
-  //     // Update all particles in the system
-  //     for (const particle of this.particles) {
-  //       particle.update(this.particles);
-  //     }
-
-  //     // Remove particles with zero energy
-  //     this.particles = this.particles.filter(
-  //       (particle) => particle.energyContained > 0.1
-  //     );
-  //   }
+  onTick(e) {
+    // Update all particles in the system
+    for (const particle of this.particles) {
+      particle.update(e);
+    }
+  }
 
   calculateOverallEnergy() {
     // Calculate the overall energy remaining in the branch

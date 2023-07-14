@@ -5,7 +5,7 @@ function dist(x1, y1, x2, y2) {
 }
 
 function getRandomBrownishColor(minA, maxA) {
-  let r = Math.floor(150 + Math.random() * 45);
+  let r = Math.floor(100 + Math.random() * 45);
   let g = Math.floor(20 + Math.random() * 40);
   let b = Math.floor(Math.random() * 50);
 
@@ -13,5 +13,10 @@ function getRandomBrownishColor(minA, maxA) {
   if (maxA == undefined) maxA = 1;
 
   let a = (minA + (maxA - minA) * Math.random()).toFixed(2);
-  return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  return { r, g, b, a };
+  //   return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+}
+
+function makeRGBA(o) {
+  return "rgba(" + o.r + "," + o.g + "," + o.b + "," + o.a + ")";
 }

@@ -14,6 +14,12 @@ class Particle {
     this.world = particleSystem.world;
     this.x = x; // x-coordinate
     this.y = y; // y-coordinate
+
+    this.defaultColor = {
+      fillStyle: getRandomBrownishColor(0.66, 1),
+      strokeStyle: getRandomBrownishColor(0.3, 0.7),
+    };
+
     this.createBody();
 
     this.nearParticles = [];
@@ -41,9 +47,9 @@ class Particle {
       slop: -this.diameter * 0.35,
       // isSensor: true,
       render: {
-        fillStyle: getRandomBrownishColor(0.66, 1),
+        fillStyle: makeRGBA(this.defaultColor.fillStyle),
         lineWidth: this.diameter * 2,
-        strokeStyle: getRandomBrownishColor(0.3, 0.7),
+        strokeStyle: makeRGBA(this.defaultColor.strokeStyle),
       },
       // density: 99999999999999
       // mass: 0
@@ -154,18 +160,19 @@ class Particle {
     }
   }
 
-  update(particles) {
-    // Update the particle's position and velocity
-    this.x += this.velocity.x;
-    this.y += this.velocity.y;
-
-    // Apply gravity
-    this.velocity.y += this.acceleration.y;
-    this.velocity.x += this.acceleration.x;
-
+  update() {
     if (this.temperature > this.burningTemperature) {
       this.burn();
     }
+
+    this.x = this.body.position.x;
+    this.y = this.body.position.y;
+
+    this.render();
+    // if (this.energyContained > 0.1) {
+    //   // console.log(1);
+    //   this.remove();
+    // }
 
     this.transferTemperatureToSurroundingParticles();
 
@@ -182,36 +189,47 @@ class Particle {
     // }
   }
 
-  render(context) {
+  render() {
     // Render the particle on the canvas
-    if (this.onFire) {
-      // Render fire effect when the particle is on fire
-      const radius = 5 + Math.random() * 5;
-      const intensity = 60 + Math.random() * 60;
-      const gradient = context.createRadialGradient(
-        this.x,
-        this.y,
-        0,
-        this.x,
-        this.y,
-        radius
-      );
-      gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.1)`);
-      gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
-      context.fillStyle = gradient;
-      context.fillRect(
-        this.x - radius,
-        this.y - radius,
-        radius * 2,
-        radius * 2
-      );
-    } else {
-      // Render regular particle
-      let r = this.temperature * 2;
-      let g = 30;
-      let b = 30;
-      context.fillStyle = "rgb(" + r + "," + g + "," + b + ")";
-      context.fillRect(this.x, this.y, 1, 1);
-    }
+    // if (this.onFire) {
+    //   // Render fire effect when the particle is on fire
+    //   const radius = 5 + Math.random() * 5;
+    //   const intensity = 60 + Math.random() * 60;
+    //   const gradient = context.createRadialGradient(
+    //     this.x,
+    //     this.y,
+    //     0,
+    //     this.x,
+    //     this.y,
+    //     radius
+    //   );
+    //   gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.1)`);
+    //   gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
+    //   context.fillStyle = gradient;
+    //   context.fillRect(
+    //     this.x - radius,
+    //     this.y - radius,
+    //     radius * 2,
+    //     radius * 2
+    //   );
+    // }
+
+    let fillR = this.defaultColor.fillStyle.r;
+    let strokeR = this.defaultColor.strokeStyle.r;
+
+    let tempRatio = this.temperature / this.burningTemperature;
+    let newFillR = tempRatio * (255 - fillR) + fillR;
+
+    let newStrokeR = tempRatio * (255 - strokeR) + strokeR;
+
+    this.body.render.fillStyle = makeRGBA({
+      ...this.defaultColor.fillStyle,
+      r: newFillR,
+    });
+
+    this.body.render.strokeStyle = makeRGBA({
+      ...this.defaultColor.strokeStyle,
+      r: newStrokeR,
+    });
   }
 }
