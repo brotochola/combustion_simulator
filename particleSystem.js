@@ -1,5 +1,11 @@
 class ParticleSystem {
   constructor(canvasId, width, height, Matter) {
+    this.config = {
+      diameter: 4,
+      maxNumberOfConnectionsPerBody: 20,
+      maxDistanceToAttach: 40,
+    };
+
     this.Matter = Matter;
     this.engine = Matter.Engine.create();
     this.world = Matter.World;
@@ -68,8 +74,36 @@ class ParticleSystem {
     this.Matter.Runner.run(this.runner, this.engine);
   }
   indicateWhichParticleItIs() {}
-  removeParticle() {}
+  findTwoClosestParticles(x, y) {
+    let arr = [];
+    for (let i = 0; i < this.particles.length; i++) {
+      let b = this.particles[i].body;
+      let distance = dist(x, y, b.position.x, b.position.y);
+      arr.push({ body: b, distance: distance });
+    }
 
+    let newArr = arr.sort((a, b) => (a.distance > b.distance ? 1 : -1));
+    return newArr;
+  }
+  removeParticle(x, y) {
+    let closePs = this.findTwoClosestParticles(x, y);
+
+    if (!closePs[0]) return;
+
+    let closest = closePs[0];
+
+    console.log("#closest p", closest.body);
+
+    if (
+      dist(x, y, closest.body.position.x, closest.body.position.y) <
+      this.config.diameter * 3
+    ) {
+      for (let constr of closest.body.constraints) {
+        this.world.remove(this.engine.world, constr);
+      }
+      this.world.remove(this.engine.world, closest.body);
+    }
+  }
   addClickListenerToCanvas() {
     let canvas = document.querySelector("canvas");
     canvas.onmouseleave = (e) => (window.isDown = false);
@@ -93,7 +127,7 @@ class ParticleSystem {
       if (window.isDown == 2) {
         //REMOVE PARTICLES
 
-        removeParticle(x, y);
+        this.removeParticle(x, y);
 
         return;
       } else if (window.isDown == 3) {
@@ -105,6 +139,7 @@ class ParticleSystem {
   }
 
   addEventListenerToMouse() {
+    //THIS IS THE BURNING FUNCTION!
     // Add event listener to handle particle interaction on click
     this.canvas.addEventListener("mousemove", (event) => {
       const rect = this.canvas.getBoundingClientRect();

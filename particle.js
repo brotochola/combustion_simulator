@@ -5,14 +5,16 @@ class Particle {
     this.particleSystem = particleSystem;
     this.Matter = particleSystem.Matter;
     this.engine = particleSystem.engine;
-    this.diameter = 4;
-    this.maxNumberOfConnectionsPerBody = 20;
-    this.maxDistanceToAttach = this.diameter * 10;
+
+    this.diameter = particleSystem.config.diameter;
+    this.maxNumberOfConnectionsPerBody =
+      particleSystem.config.maxNumberOfConnectionsPerBody;
+    this.maxDistanceToAttach = particleSystem.config.maxDistanceToAttach;
 
     this.world = particleSystem.world;
     this.x = x; // x-coordinate
     this.y = y; // y-coordinate
-    this.body = this.createBody();
+    this.createBody();
 
     this.nearParticles = [];
 
@@ -53,6 +55,8 @@ class Particle {
       this.diameter,
       bodyOptions
     );
+
+    this.body.constraints = []; //i need to keep track which constraints each body has
 
     this.world.add(this.engine.world, [this.body]);
   }
