@@ -30,6 +30,7 @@ class Particle {
     this.energyContainedAccordingToEinstein();
     this.thermalConductivityAccordingToSubstance();
     this.burningTemperatureAccordingToSubstance();
+
     // this.heat = 0; // heat being applied to the particle
     this.temperature = temperature || 20;
 
@@ -68,7 +69,10 @@ class Particle {
     this.world.add(this.engine.world, [this.body]);
   }
   burningTemperatureAccordingToSubstance() {
-    if (this.substance == "wood") this.burningTemperature = 250;
+    if (this.substance == "wood") {
+      this.burningTemperature = 250;
+      this.maxTemperature = 1093;
+    }
   }
   thermalConductivityAccordingToSubstance() {
     if (this.substance == "wood") this.thermalConductivity = 0.000025;
@@ -76,7 +80,10 @@ class Particle {
   energyContainedAccordingToEinstein() {
     //energy contained in joules
     // if (this.substance == "wood") this.energyContained = this.mass * 10000
-    if (this.substance == "wood") this.energyContained = this.mass * 2000000000;
+    if (this.substance == "wood") {
+      this.energyContained = this.mass * 2000000000;
+      this.originalEnergycontained = this.mass * 2000000000;
+    }
   }
   heatCapacityAccordingToSubstance() {
     //energy in joules to raise this particles (1mm3) 1 degree C
@@ -93,7 +100,7 @@ class Particle {
     this.temperature += joules * this.heatCapacity;
   }
 
-  remove() {
+  remove(opt) {
     for (let constr of this.body.constraints) {
       this.world.remove(this.engine.world, constr);
     }
@@ -102,13 +109,19 @@ class Particle {
     this.particleSystem.particles = this.particleSystem.particles.filter(
       (k) => k.body.id != this.body.id
     );
+
+    if ((opt || {}).leaveAshes) {
+    }
   }
 
   burn() {
     //when it burns, it converts to another substance
     //and releases heat
     this.onFire = true;
-    const amountOfEnergyToTransmitToClosestParticles = 0.05;
+
+    let howMuchEnergyGetsActuallyLiberated =
+      this.originalEnergycontained * 0.001;
+
     // const amountOfEnergyToTransmitTo2ndLevelParticles = 0.066;
     this.nearParticles = this.getNearParticles();
 
@@ -116,14 +129,17 @@ class Particle {
     //FIX ME: THE ENERGY TRANSFERED FROM A BURNING PARTICLE TO THE REST
     // SHOULD BE ACCORDING TO THE DISTANCE BETWEEN THEM
     //////
-    for (const p of this.nearParticles) {
-      //the amount of energy to be released goes to other particles
-      //according to the distance they get more or less
 
-      //apply 10% of the energy to nearParticles
-      let howMuchEnergy =
-        (this.energyContained * amountOfEnergyToTransmitToClosestParticles) /
-        this.nearParticles.length;
+    let howManyNearParts = this.nearParticles.length + 1;
+    for (const p of [...this.nearParticles, this]) {
+      //the amount of energy to be released goes to other particles
+      //also to itself!
+      if (!p.amIBelowMaxTemp()) {
+        // console.log("#maxTemp");
+        continue;
+      }
+
+      let howMuchEnergy = howMuchEnergyGetsActuallyLiberated / howManyNearParts;
 
       //CHANGE HOW MUCH ENERGY ACCORDING TO Y
       if (p.body.position.y < this.body.position.y) {
@@ -132,8 +148,14 @@ class Particle {
         howMuchEnergy /= 1 * 5;
       }
       p.applyHeat(howMuchEnergy);
-      this.energyContained -= howMuchEnergy * 1.05; //something is always lost
+      // this.energyContained -= howMuchEnergy * 1.05; //something is always lost
     }
+
+    this.energyContained -= howMuchEnergyGetsActuallyLiberated;
+  }
+
+  amIBelowMaxTemp() {
+    return this.temperature < this.maxTemperature;
   }
 
   transferTemperatureToSurroundingParticles() {
@@ -169,7 +191,7 @@ class Particle {
 
     if (this.energyContained < 0.1) {
       // console.log(1);
-      this.remove();
+      this.remove({ leaveAshes: true });
     }
 
     this.transferTemperatureToSurroundingParticles();
@@ -202,7 +224,7 @@ class Particle {
       let difY = Math.abs(this.body.position.y - p.body.position.y);
       // let difY
       if (difX < this.diameter * 6 && difY < this.diameter * 6) {
-        arr.push(p);
+        if (p != this) arr.push(p);
       }
       // if(p.body.x)
     }
