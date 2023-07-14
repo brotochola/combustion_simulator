@@ -15,6 +15,11 @@
             overflow-x: hidden;
         }
 
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
         #fireCanvas {
             position: absolute;
             pointer-events: none;
@@ -34,6 +39,10 @@
             left: 0px;
             top: 0px;
         }
+
+        #buttons {
+            order: 3
+        }
     </style>
 
     <script src="matter.js"></script>
@@ -47,6 +56,17 @@
     <!-- <div id="info"></div> -->
 
     <script src="combustion_sim.js"></script>
+    <div id="buttons">
+        <br>
+        <button onclick="    particleSystem.engine.world.gravity.y = 1">turn gravity on</button>
+
+        <button onclick="    particleSystem.engine.world.gravity.y = 0">turn gravity off</button>
+        <br>
+        <button onclick=" particleSystem.addAutomaticConnections();">add connections</button>
+        <br>
+        <button onclick=" particleSystem.toggleViewConstraints();">toggle view constraints</button>
+    </div>
+
 
 </body>
 

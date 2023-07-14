@@ -1,5 +1,6 @@
 class ParticleSystem {
   constructor(canvasId, width, height, Matter) {
+    this.COUNTER = 0;
     this.config = {
       diameter: 4,
       maxNumberOfConnectionsPerBody: 20,
@@ -97,10 +98,10 @@ class ParticleSystem {
       this.config.diameter * 2
     ) {
       let p = closeP[0].body;
-      window.tempParticle = p;
+      window.tempParticle = p.particle;
       //DEBUG
       p.particle.temperature += 200;
-      console.log(p);
+      console.log(p.particle);
     }
   }
   findTwoClosestParticles(x, y) {
@@ -213,7 +214,7 @@ class ParticleSystem {
 
   onTick(e) {
     // Update all particles in the system
-
+    this.COUNTER++;
     setTimeout(() => {
       this.fireContext.clearRect(
         0,
@@ -224,7 +225,7 @@ class ParticleSystem {
     }, 25);
 
     for (const particle of this.particles) {
-      particle.update(e);
+      particle.update(this.COUNTER);
     }
   }
 
@@ -382,5 +383,11 @@ class ParticleSystem {
     } //for
 
     console.log("#we added ", howManyConnectionsWeMadeNow, "new constraints");
+  }
+
+  toggleViewConstraints() {
+    for (let c of this.engine.world.constraints) {
+      c.render.visible = !c.render.visible;
+    }
   }
 }

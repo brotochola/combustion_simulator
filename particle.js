@@ -43,7 +43,7 @@ class Particle {
     let bodyOptions = {
       restitution: 0.1,
       // mass: 9999,
-      friction: 0.5,
+      friction: 1,
       slop: -this.diameter * 0.35,
       // isSensor: true,
       render: {
@@ -76,7 +76,7 @@ class Particle {
   energyContainedAccordingToEinstein() {
     //energy contained in joules
     // if (this.substance == "wood") this.energyContained = this.mass * 10000
-    if (this.substance == "wood") this.energyContained = this.mass * 1000000000;
+    if (this.substance == "wood") this.energyContained = this.mass * 2000000000;
   }
   heatCapacityAccordingToSubstance() {
     //energy in joules to raise this particles (1mm3) 1 degree C
@@ -108,39 +108,36 @@ class Particle {
     //when it burns, it converts to another substance
     //and releases heat
     this.onFire = true;
-    const amountOfEnergyToTransmitToClosestParticles = 0.2;
-    const amountOfEnergyToTransmitTo2ndLevelParticles = 0.066;
+    const amountOfEnergyToTransmitToClosestParticles = 0.05;
+    // const amountOfEnergyToTransmitTo2ndLevelParticles = 0.066;
+    this.nearParticles = this.getNearParticles();
 
+    ////////
+    //FIX ME: THE ENERGY TRANSFERED FROM A BURNING PARTICLE TO THE REST
+    // SHOULD BE ACCORDING TO THE DISTANCE BETWEEN THEM
+    //////
     for (const p of this.nearParticles) {
       //the amount of energy to be released goes to other particles
       //according to the distance they get more or less
 
       //apply 10% of the energy to nearParticles
-      const howMuchEnergy =
+      let howMuchEnergy =
         (this.energyContained * amountOfEnergyToTransmitToClosestParticles) /
         this.nearParticles.length;
+
+      //CHANGE HOW MUCH ENERGY ACCORDING TO Y
+      if (p.body.position.y < this.body.position.y) {
+        howMuchEnergy *= 1 * 5;
+      } else {
+        howMuchEnergy /= 1 * 5;
+      }
       p.applyHeat(howMuchEnergy);
-      this.energyContained -= howMuchEnergy;
-
-      let tempArrayOfNearPArticlesLvl2 = [];
-      for (const p2 of p.nearParticles) {
-        if (p2 == p) continue;
-        tempArrayOfNearPArticlesLvl2.push(p2);
-      }
-
-      //apply 5% of the energy to particles that are near of the near ones
-      let howMuchEnergy2 =
-        (this.energyContained * amountOfEnergyToTransmitTo2ndLevelParticles) /
-        tempArrayOfNearPArticlesLvl2.length;
-      for (const p2 of tempArrayOfNearPArticlesLvl2) {
-        p2.applyHeat(howMuchEnergy2);
-        this.energyContained -= howMuchEnergy2;
-      }
+      this.energyContained -= howMuchEnergy * 1.05; //something is always lost
     }
   }
 
   transferTemperatureToSurroundingParticles() {
-    for (const particle of this.particles) {
+    for (const particle of this.nearParticles) {
       if (particle !== this) {
         const distance = Math.sqrt(
           Math.pow(this.x - particle.x, 2) + Math.pow(this.y - particle.y, 2)
@@ -160,7 +157,7 @@ class Particle {
     }
   }
 
-  update() {
+  update(COUNTER) {
     if (this.temperature > this.burningTemperature) {
       this.burn();
     }
@@ -169,10 +166,11 @@ class Particle {
     this.y = this.body.position.y;
 
     this.render();
-    // if (this.energyContained > 0.1) {
-    //   // console.log(1);
-    //   this.remove();
-    // }
+
+    if (this.energyContained < 0.1) {
+      // console.log(1);
+      this.remove();
+    }
 
     this.transferTemperatureToSurroundingParticles();
 
@@ -187,6 +185,32 @@ class Particle {
     //         this.applyHeat(energyTransfer)
     //     }
     // }
+  }
+
+  getAvgTempOfNearParticles() {
+    let avg = 0;
+    for (let p of this.nearParticles) {
+      avg += p.temperature;
+    }
+    return avg / this.nearParticles.length;
+  }
+
+  getNearParticles() {
+    let arr = [];
+    for (let p of this.particles) {
+      let difX = Math.abs(this.body.position.x - p.body.position.x);
+      let difY = Math.abs(this.body.position.y - p.body.position.y);
+      // let difY
+      if (difX < this.diameter * 6 && difY < this.diameter * 6) {
+        arr.push(p);
+      }
+      // if(p.body.x)
+    }
+    return arr;
+  }
+
+  highlight() {
+    this.highlighted = true;
   }
 
   drawFlames() {
@@ -211,11 +235,19 @@ class Particle {
     context.fillRect(this.x - radius, this.y - radius, radius * 2, radius * 4);
   }
   render() {
+    if (this.highlighted) {
+      this.body.render.fillStyle = "white";
+      return;
+    }
     // Render the particle on the canvas
     if (this.onFire) {
       this.drawFlames();
     }
 
+    this.setColorAccordingToTemperature();
+  }
+
+  setColorAccordingToTemperature() {
     let fillR = this.defaultColor.fillStyle.r;
     let strokeR = this.defaultColor.strokeStyle.r;
 
