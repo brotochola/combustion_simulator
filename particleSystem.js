@@ -205,7 +205,8 @@ class ParticleSystem {
   }
 
   addParticle(x, y) {
-    // console.log("add particule", x, y);
+    let substance = "wood";
+    /// IT CAN BE WOOD GAS ;)
 
     const particle = new Particle(x, y, "wood", 20, this);
     particle.particles = this.particles;

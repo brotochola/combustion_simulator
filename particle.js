@@ -207,6 +207,15 @@ class Particle {
     //         this.applyHeat(energyTransfer)
     //     }
     // }
+
+    if (this.substance == "woodGas") this.applyForceUpwards();
+  }
+
+  applyForceUpwards() {
+    this.particleSystem.Matter.Body.applyForce(this.body, this.body.position, {
+      x: 0,
+      y: -0.00005 - Math.random() * 0.00001,
+    });
   }
 
   getAvgTempOfNearParticles() {
