@@ -120,7 +120,7 @@ class Particle {
     this.onFire = true;
 
     let howMuchEnergyGetsActuallyLiberated =
-      this.originalEnergycontained * 0.001;
+      this.originalEnergycontained * 0.005;
 
     // const amountOfEnergyToTransmitTo2ndLevelParticles = 0.066;
     this.nearParticles = this.getNearParticles();
@@ -239,22 +239,57 @@ class Particle {
     const context = this.particleSystem.fireCanvas.getContext("2d");
 
     // Render fire effect when the particle is on fire
-    const radius = this.diameter * 3 + Math.random() * this.diameter * 4;
+    const radius = this.diameter * 4 + Math.random() * this.diameter * 3;
 
     const intensity = 120 + Math.random() * 120;
 
+    let centerOfGradient = {
+      x: this.x + this.diameter / 2,
+      y: this.y - radius, //height of flame
+    };
+    let sizeOfRect = { w: radius * 2, h: radius * 4 };
+
+    const gradient = context.createRadialGradient(
+      centerOfGradient.x,
+      centerOfGradient.y,
+      this.diameter,
+      centerOfGradient.x,
+      centerOfGradient.y - this.diameter * 2,
+      radius / 2
+    );
+    gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.3)`);
+    gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
+    context.fillStyle = gradient;
+    context.fillRect(
+      this.x - sizeOfRect.w / 2,
+      this.y - sizeOfRect.h,
+      sizeOfRect.w,
+      sizeOfRect.h
+    );
+  }
+
+  drawFlames2() {
+    const context = this.particleSystem.fireCanvas.getContext("2d");
+    // Render fire effect when the particle is on fire
+    const radius = this.diameter * 2 + Math.random() * this.diameter * 3;
+    const intensity = 60 + Math.random() * 60;
     const gradient = context.createRadialGradient(
       this.x,
       this.y,
       0,
       this.x,
-      this.y - radius / 4,
-      radius
+      this.y - radius,
+      radius * 1.1
     );
-    gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.5)`);
-    gradient.addColorStop(1, "rgba(255, 0, 0, 0)");
-    context.fillStyle = gradient;
-    context.fillRect(this.x - radius, this.y - radius, radius * 2, radius * 4);
+    gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.66)`);
+    gradient.addColorStop(1, `rgba(255, ${120 - intensity}, 0, 0)`);
+    context.fillStyle = gradient; //"white";
+    context.fillRect(
+      this.x - radius * 2,
+      this.y - radius * 7,
+      radius * 4,
+      radius * 8
+    );
   }
   render() {
     if (this.highlighted) {
@@ -264,6 +299,7 @@ class Particle {
     // Render the particle on the canvas
     if (this.onFire) {
       this.drawFlames();
+      this.drawFlames2();
     }
 
     this.setColorAccordingToTemperature();
