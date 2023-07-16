@@ -198,7 +198,7 @@ class ParticleSystem {
   addFloor() {
     var ground = Bodies.rectangle(0, 810, 3000, 200, {
       restitution: 0,
-      friction: 0.5,
+      friction: 99999999999999999999,
       slop: 0,
       label: "piso",
       render: {

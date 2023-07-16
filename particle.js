@@ -70,7 +70,8 @@ class Particle {
       restitution: this.substance == "wood" ? 0.1 : 0,
       mass: this.substance == "wood" ? 1 : 0.00000001,
       friction: this.substance == "wood" ? 1 : 0,
-      slop: this.substance == "wood" ? -this.diameter * 0.35 : 0,
+      slop:
+        this.substance == "wood" ? -this.diameter * 0.35 : this.diameter * 2,
       // isSensor: true,
       render: renderTypes[this.substance],
       // density: 99999999999999
@@ -95,7 +96,7 @@ class Particle {
       this.maxTemperature = 1093;
     } else if (this.substance == "woodGas") {
       this.burningTemperature = 200; //lower than wood
-      this.maxTemperature = 900; //roughly accurate
+      this.maxTemperature = 1200; //roughly accurate
     }
   }
   thermalConductivityAccordingToSubstance() {
@@ -271,9 +272,12 @@ class Particle {
   }
 
   applyForceUpwards() {
+    console.log(this.temperature / this.maxTemperature);
     this.particleSystem.Matter.Body.applyForce(this.body, this.body.position, {
       x: 0, //Math.random() * 0.00000005 - 0.000000025,
-      y: -0.00000000001 - 0.00000000001 * Math.random(), //-0.0000005 - Math.random() * 0.00000001,
+      y:
+        -0.00000000001 -
+        0.00000000001 * (this.temperature / this.maxTemperature), //-0.0000005 - Math.random() * 0.00000001,
     });
   }
 
@@ -303,7 +307,7 @@ class Particle {
     this.highlighted = true;
   }
 
-  drawFlames() {
+  drawFlamesForWood() {
     const context = this.particleSystem.fireCanvas.getContext("2d");
 
     // Render fire effect when the particle is on fire
@@ -336,7 +340,7 @@ class Particle {
     );
   }
 
-  drawFlames2() {
+  drawGlowingFlames() {
     const context = this.particleSystem.fireCanvas.getContext("2d");
     // Render fire effect when the particle is on fire
     let radius;
@@ -349,13 +353,14 @@ class Particle {
       alpha = 0.15;
     }
 
-    const intensity = 60 + Math.random() * 60;
+    let intensity = 120 + (this.temperature / this.maxTemperature) * 120;
+    if (intensity > 255) intensity = 255;
     const gradient = context.createRadialGradient(
       this.x,
       this.y,
       0,
       this.x,
-      this.y - radius,
+      this.y - (this.substance == "woodGas" ? 0 : radius),
       radius * 1.1
     );
     gradient.addColorStop(0, `rgba(255, ${intensity}, 0, ${alpha})`);
@@ -375,8 +380,8 @@ class Particle {
     }
     // Render the particle on the canvas
     if (this.onFire) {
-      if (this.substance == "wood") this.drawFlames();
-      this.drawFlames2();
+      if (this.substance == "wood") this.drawFlamesForWood();
+      this.drawGlowingFlames();
     }
 
     if (this.substance == "wood") this.setColorAccordingToTemperature();
