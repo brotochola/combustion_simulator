@@ -1,33 +1,43 @@
 // https://codepen.io/davepvm/pen/Hhstl
 // Particle class representing each molecule
 class Particle {
-  constructor(x, y, substance, temperature, particleSystem) {
+  constructor(x, y, substance, temperature, particleSystem, energyContained) {
     this.particleSystem = particleSystem;
     this.Matter = particleSystem.Matter;
     this.engine = particleSystem.engine;
 
-    this.diameter = particleSystem.config.diameter;
+    this.diameter = particleSystem.config[substance].diameter;
     this.maxNumberOfConnectionsPerBody =
-      particleSystem.config.maxNumberOfConnectionsPerBody;
-    this.maxDistanceToAttach = particleSystem.config.maxDistanceToAttach;
+      particleSystem.config[substance].maxNumberOfConnectionsPerBody;
+    this.maxDistanceToAttach =
+      particleSystem.config[substance].maxDistanceToAttach;
 
     this.world = particleSystem.world;
     this.x = x; // x-coordinate
     this.y = y; // y-coordinate
 
-    this.defaultColor = {
-      fillStyle: getRandomBrownishColor(0.66, 1),
-      strokeStyle: getRandomBrownishColor(0.3, 0.7),
+    this.substance = substance || "wood"; // substance of the particle
+
+    let defaultColors = {
+      wood: {
+        fillStyle: getRandomBrownishColor(0.66, 1),
+        strokeStyle: getRandomBrownishColor(0.3, 0.7),
+      },
+      woodGas: {
+        fillStyle: "transparent",
+        strokeStyle: "transparent",
+      },
     };
+
+    this.defaultColor = defaultColors[this.substance];
 
     this.createBody();
 
     this.nearParticles = [];
 
-    this.substance = substance || "wood"; // substance of the particle
     this.heatCapacityAccordingToSubstance();
     this.massAccordingToSubstance();
-    this.energyContainedAccordingToEinstein();
+    this.calculateEneryContained(energyContained);
     this.thermalConductivityAccordingToSubstance();
     this.burningTemperatureAccordingToSubstance();
 
@@ -37,21 +47,32 @@ class Particle {
     this.velocity = { x: 0, y: 0 }; // velocity of the particle
     // this.gravity = 0; // gravity affecting the particle
     this.acceleration = { x: 0, y: 0 };
-    this.onFire = false; // flag indicating if the particle is on fire
+    this.onFire = this.substance == "woodGas";
   }
 
   createBody() {
-    let bodyOptions = {
-      restitution: 0.1,
-      // mass: 9999,
-      friction: 1,
-      slop: -this.diameter * 0.35,
-      // isSensor: true,
-      render: {
+    let renderTypes = {
+      wood: {
         fillStyle: makeRGBA(this.defaultColor.fillStyle),
         lineWidth: this.diameter * 2,
         strokeStyle: makeRGBA(this.defaultColor.strokeStyle),
       },
+
+      woodGas: {
+        fillStyle: "transparent",
+        lineWidth: 0,
+        strokeStyle: "transparent",
+        visible: false,
+      },
+    };
+
+    let bodyOptions = {
+      restitution: this.substance == "wood" ? 0.1 : 0,
+      mass: this.substance == "wood" ? 1 : 0.00000001,
+      friction: this.substance == "wood" ? 1 : 0,
+      slop: this.substance == "wood" ? -this.diameter * 0.35 : 0,
+      // isSensor: true,
+      render: renderTypes[this.substance],
       // density: 99999999999999
       // mass: 0
     };
@@ -72,22 +93,37 @@ class Particle {
     if (this.substance == "wood") {
       this.burningTemperature = 250;
       this.maxTemperature = 1093;
+    } else if (this.substance == "woodGas") {
+      this.burningTemperature = 200; //lower than wood
+      this.maxTemperature = 900; //roughly accurate
     }
   }
   thermalConductivityAccordingToSubstance() {
     if (this.substance == "wood") this.thermalConductivity = 0.000025;
+    else if (this.substance == "woodGas") this.thermalConductivity = 0.0000025; //10x less
   }
-  energyContainedAccordingToEinstein() {
+  calculateEneryContained(energyContained) {
     //energy contained in joules
     // if (this.substance == "wood") this.energyContained = this.mass * 10000
     if (this.substance == "wood") {
       this.energyContained = this.mass * 2000000000;
       this.originalEnergycontained = this.mass * 2000000000;
+    } else if (this.substance == "woodGas") {
+      //WHEN WOODGAS IS LIBERATED, I WANT IT TO HAVE THE ENERGY THAT I TAKE OUT FROM THE WOOD
+      if (energyContained) {
+        this.energyContained = energyContained;
+        this.originalEnergycontained = energyContained;
+      } else {
+        //10x less than wood
+        this.energyContained = this.mass * 200000000;
+        this.originalEnergycontained = this.mass * 200000000;
+      }
     }
   }
   heatCapacityAccordingToSubstance() {
     //energy in joules to raise this particles (1mm3) 1 degree C
     if (this.substance == "wood") this.heatCapacity = 0.001025;
+    else if (this.substance == "woodGas") this.heatCapacity = 0.0001025;
   }
   massAccordingToSubstance() {
     //mass in grams
@@ -95,12 +131,14 @@ class Particle {
     //0,0005gr / mm3
 
     if (this.substance == "wood") this.mass = 0.0005;
+    else if (this.substance == "woodGas") this.mass = 0.00005;
   }
   applyHeat(joules) {
-    this.temperature += joules * this.heatCapacity;
+    this.temperature += Math.floor(joules) * this.heatCapacity;
   }
 
   remove(opt) {
+    // console.log("removing");
     for (let constr of this.body.constraints) {
       this.world.remove(this.engine.world, constr);
     }
@@ -113,16 +151,28 @@ class Particle {
     if ((opt || {}).leaveAshes) {
     }
   }
+  releaseWoodGas(energy) {
+    //   addParticle(x, y, substance, temperature, energy) {
+    // console.log(energy);
+    // debugger;
+    this.particleSystem.addParticle(
+      this.x - this.diameter * 0.5 + Math.random() * this.diameter,
+      this.y - this.diameter,
+      "woodGas",
+      this.temperature,
+      energy
+    );
+  }
 
   burn() {
     //when it burns, it converts to another substance
     //and releases heat
     this.onFire = true;
+    // if (this.substance == "woodGas") debugger;
 
-    let howMuchEnergyGetsActuallyLiberated =
-      this.originalEnergycontained * 0.005;
+    let minEnergyToBeLiberated = this.originalEnergycontained * 0.05;
+    let howMuchEnergyGetsActuallyLiberated = minEnergyToBeLiberated;
 
-    // const amountOfEnergyToTransmitTo2ndLevelParticles = 0.066;
     this.nearParticles = this.getNearParticles();
 
     ////////
@@ -131,27 +181,34 @@ class Particle {
     //////
 
     let howManyNearParts = this.nearParticles.length + 1;
+    let howMuchEnergyPerClosePArticle =
+      howMuchEnergyGetsActuallyLiberated / howManyNearParts;
+
+    let counterOfEnergyLiberatedInThisFrame = 0;
     for (const p of [...this.nearParticles, this]) {
       //the amount of energy to be released goes to other particles
       //also to itself!
       if (!p.amIBelowMaxTemp()) {
-        // console.log("#maxTemp");
         continue;
       }
 
-      let howMuchEnergy = howMuchEnergyGetsActuallyLiberated / howManyNearParts;
+      let howMuchEnergyForThisParticle =
+        p.body.position.y < this.body.position.y
+          ? howMuchEnergyPerClosePArticle * 1.5
+          : howMuchEnergyPerClosePArticle / 1.5;
 
-      //CHANGE HOW MUCH ENERGY ACCORDING TO Y
-      if (p.body.position.y < this.body.position.y) {
-        howMuchEnergy *= 1 * 5;
-      } else {
-        howMuchEnergy /= 1 * 5;
-      }
-      p.applyHeat(howMuchEnergy);
-      // this.energyContained -= howMuchEnergy * 1.05; //something is always lost
+      p.applyHeat(howMuchEnergyForThisParticle);
+      counterOfEnergyLiberatedInThisFrame += howMuchEnergyForThisParticle;
+    } //for
+
+    //SOME NERGY GOES TO HEAT OTHER PARTICLES.
+    this.energyContained -= counterOfEnergyLiberatedInThisFrame;
+
+    //SOME OTHER ENERGY TRANSFORMS TO NEW PARTICLES OF WOODGAS
+    if (this.substance == "wood" && this.COUNTER % 2 == 0) {
+      this.releaseWoodGas(howMuchEnergyGetsActuallyLiberated);
+      this.energyContained -= howMuchEnergyGetsActuallyLiberated;
     }
-
-    this.energyContained -= howMuchEnergyGetsActuallyLiberated;
   }
 
   amIBelowMaxTemp() {
@@ -180,6 +237,8 @@ class Particle {
   }
 
   update(COUNTER) {
+    this.COUNTER = COUNTER;
+    // console.log(this.temperature, this.substance);
     if (this.temperature > this.burningTemperature) {
       this.burn();
     }
@@ -187,9 +246,7 @@ class Particle {
     this.x = this.body.position.x;
     this.y = this.body.position.y;
 
-    this.render();
-
-    if (this.energyContained < 0.1) {
+    if (this.energyContained < 1) {
       // console.log(1);
       this.remove({ leaveAshes: true });
     }
@@ -209,12 +266,14 @@ class Particle {
     // }
 
     if (this.substance == "woodGas") this.applyForceUpwards();
+
+    this.render();
   }
 
   applyForceUpwards() {
     this.particleSystem.Matter.Body.applyForce(this.body, this.body.position, {
-      x: 0,
-      y: -0.00005 - Math.random() * 0.00001,
+      x: 0, //Math.random() * 0.00000005 - 0.000000025,
+      y: -0.00000000001 - 0.00000000001 * Math.random(), //-0.0000005 - Math.random() * 0.00000001,
     });
   }
 
@@ -280,7 +339,16 @@ class Particle {
   drawFlames2() {
     const context = this.particleSystem.fireCanvas.getContext("2d");
     // Render fire effect when the particle is on fire
-    const radius = this.diameter * 2 + Math.random() * this.diameter * 3;
+    let radius;
+    let alpha;
+    if (this.substance == "wood") {
+      radius = this.diameter * 2 + Math.random() * this.diameter * 3;
+      alpha = 0.66;
+    } else if (this.substance == "woodGas") {
+      radius = this.diameter * 5 + Math.random() * this.diameter * 5;
+      alpha = 0.15;
+    }
+
     const intensity = 60 + Math.random() * 60;
     const gradient = context.createRadialGradient(
       this.x,
@@ -290,7 +358,7 @@ class Particle {
       this.y - radius,
       radius * 1.1
     );
-    gradient.addColorStop(0, `rgba(255, ${intensity}, 0, 0.66)`);
+    gradient.addColorStop(0, `rgba(255, ${intensity}, 0, ${alpha})`);
     gradient.addColorStop(1, `rgba(255, ${120 - intensity}, 0, 0)`);
     context.fillStyle = gradient; //"white";
     context.fillRect(
@@ -307,11 +375,11 @@ class Particle {
     }
     // Render the particle on the canvas
     if (this.onFire) {
-      this.drawFlames();
+      if (this.substance == "wood") this.drawFlames();
       this.drawFlames2();
     }
 
-    this.setColorAccordingToTemperature();
+    if (this.substance == "wood") this.setColorAccordingToTemperature();
   }
 
   setColorAccordingToTemperature() {

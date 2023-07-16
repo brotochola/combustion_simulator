@@ -2,9 +2,16 @@ class ParticleSystem {
   constructor(canvasId, width, height, Matter) {
     this.COUNTER = 0;
     this.config = {
-      diameter: 4,
-      maxNumberOfConnectionsPerBody: 20,
-      maxDistanceToAttach: 40,
+      wood: {
+        diameter: 4,
+        maxNumberOfConnectionsPerBody: 20,
+        maxDistanceToAttach: 40,
+      },
+      woodGas: {
+        diameter: 2,
+        maxNumberOfConnectionsPerBody: 0,
+        maxDistanceToAttach: 0,
+      },
     };
 
     this.Matter = Matter;
@@ -93,9 +100,11 @@ class ParticleSystem {
     let closeP = this.findTwoClosestParticles(x, y);
     if (!closeP[0]) return;
 
+    const maxDistance = this.config["wood"].diameter * 2;
+
     if (
       dist(x, y, closeP[0].body.position.x, closeP[0].body.position.y) <
-      this.config.diameter * 2
+      maxDistance
     ) {
       let p = closeP[0].body;
       window.tempParticle = p.particle;
@@ -122,7 +131,7 @@ class ParticleSystem {
 
     if (
       dist(x, y, closest.body.position.x, closest.body.position.y) <
-      this.config.diameter * 3
+      this.config["wood"].diameter * 3
     ) {
       closest.body.particle.remove();
     }
@@ -136,7 +145,7 @@ class ParticleSystem {
       let x = e.x - box.x;
       let y = e.y - box.y;
       if (e.which == 1) this.indicateWhichParticleItIs(x, y);
-      else if (e.which == 3) this.addParticle(x, y);
+      else if (e.which == 3) this.addParticle(x, y, "wood", 20, undefined);
     };
     canvas.onmouseup = (e) => {
       window.isDown = false;
@@ -156,7 +165,7 @@ class ParticleSystem {
       } else if (window.isDown == 3) {
         //ADD PARTICLES
 
-        this.addParticle(x, y);
+        this.addParticle(x, y, "wood", 20, undefined);
       }
     };
   }
@@ -204,18 +213,31 @@ class ParticleSystem {
     this.world.add(this.engine.world, [ground]);
   }
 
-  addParticle(x, y) {
-    let substance = "wood";
+  addParticle(x, y, substance, temperature, energy) {
+    // let substance = "wood";
     /// IT CAN BE WOOD GAS ;)
 
-    const particle = new Particle(x, y, "wood", 20, this);
+    const particle = new Particle(
+      x,
+      y,
+      substance,
+      Math.floor(temperature),
+      this,
+      energy
+    );
     particle.particles = this.particles;
     this.particles.push(particle);
   }
 
   onTick(e) {
+    this.prevFrameTime = this.currentFrameTime || 0;
+    this.currentFrameTime = performance.now();
+    this.deltaTime = this.currentFrameTime - this.prevFrameTime;
     // Update all particles in the system
     this.COUNTER++;
+
+    // console.log(this.COUNTER, particleSystem.totalEnergyContained());
+
     setTimeout(() => {
       this.fireContext.clearRect(
         0,
@@ -223,20 +245,24 @@ class ParticleSystem {
         this.fireCanvas.width,
         this.fireCanvas.height
       );
-    }, 25);
+    }, this.deltaTime * 1.1);
 
     for (const particle of this.particles) {
       particle.update(this.COUNTER);
     }
   }
 
-  calculateOverallEnergy() {
+  totalEnergyContained() {
     // Calculate the overall energy remaining in the branch
     let overallEnergy = 0;
     for (const particle of this.particles) {
       overallEnergy += particle.energyContained;
     }
     return overallEnergy;
+  }
+
+  calculateAvgEnergy() {
+    return this.totalEnergyContained() / this.particles.length;
   }
 
   calculateAverageTemperature() {
@@ -320,8 +346,11 @@ class ParticleSystem {
 
       let closestP = this.findTwoClosestParticles(b.position.x, b.position.y);
 
+      //ONLY CLOSE PARTICLES, MADE OF WOOD
       closestP = (closestP || []).filter(
-        (k) => k.distance < this.config.maxDistanceToAttach
+        (k) =>
+          k.distance < this.config["wood"].maxDistanceToAttach &&
+          k.body.particle.substance == "wood"
       );
 
       //GET THE CLOSEST BODIES
@@ -343,9 +372,9 @@ class ParticleSystem {
         //I KEEP TRACK OF THIS MYSELF IN EACH BODY
         if (
           (b.constraints || []).length >=
-            this.config.maxNumberOfConnectionsPerBody ||
+            this.config["wood"].maxNumberOfConnectionsPerBody ||
           (closeParticle.constraints || []).length >=
-            this.config.maxNumberOfConnectionsPerBody
+            this.config["wood"].maxNumberOfConnectionsPerBody
         ) {
           break;
         }
@@ -363,7 +392,7 @@ class ParticleSystem {
             visible: true,
             anchors: false,
             strokeStyle: makeRGBA(getRandomBrownishColor(0.1, 0.22)),
-            lineWidth: this.config.diameter * 3,
+            lineWidth: this.config["wood"].diameter * 3,
           },
           bodyA: closeParticle.body,
           bodyB: b,
@@ -383,7 +412,11 @@ class ParticleSystem {
       } //for
     } //for
 
-    console.log("#we added ", howManyConnectionsWeMadeNow, "new constraints");
+    console.log(
+      "#we added ",
+      howManyConnectionsWeMadeNow,
+      "new constraints to wood particles"
+    );
   }
 
   toggleViewConstraints() {

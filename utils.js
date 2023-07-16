@@ -20,3 +20,7 @@ function getRandomBrownishColor(minA, maxA) {
 function makeRGBA(o) {
   return "rgba(" + o.r + "," + o.g + "," + o.b + "," + o.a + ")";
 }
+
+function unique(arr) {
+  return [...new Set(arr)];
+}
