@@ -1,7 +1,16 @@
 // https://codepen.io/davepvm/pen/Hhstl
 // Particle class representing each molecule
 class Particle {
-  constructor(x, y, substance, temperature, particleSystem, energyContained) {
+  constructor(
+    x,
+    y,
+    substance,
+    temperature,
+    particleSystem,
+    energyContained,
+    isStatic
+  ) {
+    this.isStatic = isStatic;
     this.particleSystem = particleSystem;
     this.Matter = particleSystem.Matter;
     this.engine = particleSystem.engine;
@@ -67,13 +76,15 @@ class Particle {
     };
 
     let bodyOptions = {
-      restitution: this.substance == "wood" ? 0.1 : 0,
-      mass: this.substance == "wood" ? 1 : 0.00000001,
+      restitution: this.substance == "wood" ? 0.1 : 0.1,
+      mass: this.substance == "wood" ? 1 : 0.0001,
       friction: this.substance == "wood" ? 1 : 0,
       slop:
         this.substance == "wood" ? -this.diameter * 0.35 : this.diameter * 2,
+      // frictionAir: 0,
       // isSensor: true,
       render: renderTypes[this.substance],
+      isStatic: !!this.isStatic,
       // density: 99999999999999
       // mass: 0
     };
@@ -161,7 +172,9 @@ class Particle {
       this.y - this.diameter,
       "woodGas",
       this.temperature,
-      energy
+      energy,
+      false,
+      false
     );
   }
 
@@ -272,13 +285,19 @@ class Particle {
   }
 
   applyForceUpwards() {
-    console.log(this.temperature / this.maxTemperature);
-    this.particleSystem.Matter.Body.applyForce(this.body, this.body.position, {
-      x: 0, //Math.random() * 0.00000005 - 0.000000025,
-      y:
-        -0.00000000001 -
-        0.00000000001 * (this.temperature / this.maxTemperature), //-0.0000005 - Math.random() * 0.00000001,
+    // console.log(this.temperature / this.maxTemperature);
+    const ratioOfTemp = this.temperature / this.maxTemperature;
+    this.particleSystem.Matter.Body.setVelocity(this.body, {
+      x: 0,
+      y: -this.diameter * 6 * ratioOfTemp,
     });
+
+    // this.particleSystem.Matter.Body.applyForce(this.body, this.body.position, {
+    //   x: 0, //Math.random() * 0.00000005 - 0.000000025,
+    //   y:
+    //     -0.00000000001 -
+    //     0.00000000001 * (this.temperature / this.maxTemperature), //-0.0000005 - Math.random() * 0.00000001,
+    // });
   }
 
   getAvgTempOfNearParticles() {

@@ -5,7 +5,7 @@ class ParticleSystem {
       wood: {
         diameter: 4,
         maxNumberOfConnectionsPerBody: 20,
-        maxDistanceToAttach: 40,
+        maxDistanceToAttach: 80,
       },
       woodGas: {
         diameter: 2,
@@ -18,11 +18,16 @@ class ParticleSystem {
     this.engine = Matter.Engine.create();
     this.world = Matter.World;
 
+    this.worldHeight = window.innerHeight - 100;
+
     // this.canvas = document.getElementById(canvasId);
     // this.context = this.canvas.getContext("2d");
     // this.canvas.width = width;
     // this.canvas.height = height;
     this.particles = []; // array to hold all particles
+
+    this.constraintsVisible = true;
+    this.gooBuilding = false;
 
     this.addFloor();
 
@@ -38,6 +43,36 @@ class ParticleSystem {
     this.addClickListenerToCanvas();
 
     this.addExtraCanvasForFire();
+
+    this.addShortCuts();
+  }
+
+  addShortCuts() {
+    window.onkeyup = (e) => {
+      console.log("letra", e.keyCode);
+      if (e.keyCode == 32) {
+        //space bar
+        this.togglePause();
+      } else if (e.keyCode == 71) {
+        //G
+        this.toggleGravity();
+      } else if (e.keyCode == 67) {
+        //C
+        this.toggleViewConstraints();
+      }
+    };
+  }
+  toggleGravity() {
+    this.engine.world.gravity.y = this.engine.world.gravity.y ? 0 : 1;
+    this.showAlert(this.engine.world.gravity.y ? "gravity on" : "gravity off");
+  }
+  showAlert(msg) {
+    try {
+      showAlert(msg);
+    } catch (e) {
+      console.warn(e);
+      alert(msg);
+    }
   }
 
   addExtraCanvasForFire() {
@@ -56,8 +91,11 @@ class ParticleSystem {
       element: document.body,
       engine: this.engine,
       options: {
+        pixelRatio: "auto",
+        // showPositions: true,
         width: window.innerWidth,
-        height: window.innerHeight * 0.8,
+        // showVertexNumbers: true,
+        height: this.worldHeight,
         wireframes: false, // <-- important
         // showAngleIndicator: true,
       },
@@ -95,6 +133,12 @@ class ParticleSystem {
     this.Matter.Runner.run(this.runner, this.engine);
 
     this.Matter.Events.on(this.runner, "tick", (e) => this.onTick(e));
+  }
+  togglePause() {
+    this.runner.enabled = !this.runner.enabled;
+    this.showAlert(
+      this.runner.enabled ? "Simulation running" : "Simulation paused"
+    );
   }
   indicateWhichParticleItIs(x, y) {
     let closeP = this.findTwoClosestParticles(x, y);
@@ -136,6 +180,22 @@ class ParticleSystem {
       closest.body.particle.remove();
     }
   }
+  checkIfAPointCollidesWithTheGrounds(x, y) {
+    let arr = this.engine.world.bodies.filter((k) => k.label == "ground");
+    let isColliding = false;
+    for (let gr of arr) {
+      if (
+        x > gr.bounds.min.x &&
+        x < gr.bounds.max.x &&
+        y > gr.bounds.min.y &&
+        y < gr.bounds.max.y
+      ) {
+        isColliding = true;
+        break;
+      }
+    }
+    return isColliding;
+  }
   addClickListenerToCanvas() {
     let canvas = document.querySelector("canvas");
     canvas.onmouseleave = (e) => (window.isDown = false);
@@ -145,7 +205,21 @@ class ParticleSystem {
       let x = e.x - box.x;
       let y = e.y - box.y;
       if (e.which == 1) this.indicateWhichParticleItIs(x, y);
-      else if (e.which == 3) this.addParticle(x, y, "wood", 20, undefined);
+      else if (e.which == 3) {
+        if (this.checkIfAPointCollidesWithTheGrounds(x, y)) {
+          this.addParticle(x, y, "wood", 20, undefined, true, false);
+        } else {
+          this.addParticle(
+            x,
+            y,
+            "wood",
+            20,
+            undefined,
+            false,
+            this.gooBuilding
+          );
+        }
+      }
     };
     canvas.onmouseup = (e) => {
       window.isDown = false;
@@ -163,9 +237,10 @@ class ParticleSystem {
 
         return;
       } else if (window.isDown == 3) {
-        //ADD PARTICLES
+        //ADD PARTICLES WHILE DRAGGING
 
-        this.addParticle(x, y, "wood", 20, undefined);
+        //GOO MODE DOESN'T WORK WHILE DRAGGING!
+        this.addParticle(x, y, "wood", 20, undefined, false, false);
       }
     };
   }
@@ -196,11 +271,11 @@ class ParticleSystem {
     });
   }
   addFloor() {
-    var ground = Bodies.rectangle(0, 810, 3000, 200, {
+    var ground = Bodies.rectangle(0, this.worldHeight + 90, 3000, 200, {
       restitution: 0,
-      friction: 99999999999999999999,
+      friction: 9,
       slop: 0,
-      label: "piso",
+      label: "ground",
       render: {
         fillStyle: "red",
         lineWidth: 0,
@@ -209,11 +284,49 @@ class ParticleSystem {
       render: { fillStyle: "black" },
     });
 
+    var leftWall = Bodies.rectangle(
+      -90,
+      this.worldHeight / 2,
+      200,
+      this.worldHeight,
+      {
+        restitution: 0,
+        friction: 9,
+        slop: 0,
+        label: "ground",
+        render: {
+          fillStyle: "red",
+          lineWidth: 0,
+        },
+        isStatic: true,
+        render: { fillStyle: "black" },
+      }
+    );
+
+    var rightWall = Bodies.rectangle(
+      window.innerWidth + 90,
+      this.worldHeight / 2,
+      200,
+      this.worldHeight,
+      {
+        restitution: 0,
+        friction: 9,
+        slop: 0,
+        label: "ground",
+        render: {
+          fillStyle: "red",
+          lineWidth: 0,
+        },
+        isStatic: true,
+        render: { fillStyle: "black" },
+      }
+    );
+
     // add all of the bodies to the world
-    this.world.add(this.engine.world, [ground]);
+    this.world.add(this.engine.world, [ground, leftWall, rightWall]);
   }
 
-  addParticle(x, y, substance, temperature, energy) {
+  addParticle(x, y, substance, temperature, energy, isStatic, doGooBuilding) {
     // let substance = "wood";
     /// IT CAN BE WOOD GAS ;)
 
@@ -223,10 +336,15 @@ class ParticleSystem {
       substance,
       Math.floor(temperature),
       this,
-      energy
+      energy,
+      isStatic
     );
     particle.particles = this.particles;
     this.particles.push(particle);
+
+    if (doGooBuilding) {
+      this.addAutomaticConnections([particle]);
+    }
   }
 
   onTick(e) {
@@ -333,11 +451,15 @@ class ParticleSystem {
     if (which.length > 0) return which[0];
   }
 
-  addAutomaticConnections(arr) {
+  addAutomaticConnections(arr, doNotCareAboutGooBuilding) {
     // console.log("#add automatic", numberOfAutomaticConnections, arr)
     // if (numberOfAutomaticConnections == undefined) numberOfAutomaticConnections = 3
 
     let howManyConnectionsWeMadeNow = 0;
+
+    let maxDistanceDependingOnGooModeOrNot =
+      this.config["wood"].maxDistanceToAttach *
+      (doNotCareAboutGooBuilding && this.gooBuilding ? 2 : 1);
 
     arr = arr ? arr : this.particles;
     for (let i = 0; i < arr.length; i++) {
@@ -349,7 +471,7 @@ class ParticleSystem {
       //ONLY CLOSE PARTICLES, MADE OF WOOD
       closestP = (closestP || []).filter(
         (k) =>
-          k.distance < this.config["wood"].maxDistanceToAttach &&
+          k.distance < maxDistanceDependingOnGooModeOrNot &&
           k.body.particle.substance == "wood"
       );
 
@@ -366,8 +488,9 @@ class ParticleSystem {
             closeParticle.body,
             b
           )
-        )
+        ) {
           continue;
+        }
         //CHECK HOW MANY CONSTRAINTS IT ALREADY HAS
         //I KEEP TRACK OF THIS MYSELF IN EACH BODY
         if (
@@ -419,9 +542,18 @@ class ParticleSystem {
     );
   }
 
+  toggleGooBuilding() {
+    this.gooBuilding = !this.gooBuilding;
+    this.showAlert(this.gooBuilding ? "goo mode enabled" : "goo mode disabled");
+  }
+
   toggleViewConstraints() {
     for (let c of this.engine.world.constraints) {
-      c.render.visible = !c.render.visible;
+      c.render.visible = !this.constraintsVisible;
     }
+    this.constraintsVisible = !this.constraintsVisible;
+    this.showAlert(
+      this.constraintsVisible ? "constraints visible" : "constraints hidden"
+    );
   }
 }

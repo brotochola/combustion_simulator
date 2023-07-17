@@ -161,7 +161,7 @@
             restitution: 0,
             friction: 0.5,
             slop: 0,
-            label: "piso",
+            label: "ground",
             render: {
                 fillStyle: 'red',
                 lineWidth: 0
@@ -232,15 +232,15 @@
                 // debugger
                 // console.log(p.bodyA, p.bodyB)
 
-                // if (p.bodyA.id != "piso") p.bodyA.isSensor = true
-                // if (p.bodyB.id != "piso") p.bodyB.isSensor = true
+                // if (p.bodyA.id != "ground") p.bodyA.isSensor = true
+                // if (p.bodyB.id != "ground") p.bodyB.isSensor = true
 
 
 
 
                 let maxConnectionsPerParticle = 3
 
-                if (p.bodyA.id == "piso" || p.bodyB.id == "piso") continue
+                if (p.bodyA.id == "ground" || p.bodyB.id == "ground") continue
                 if (findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(p.bodyA, p.bodyB)) continue
                 if ((p.bodyA.constraints || []).length > 6 || (p.bodyB.constraints || []).length >= maxConnectionsPerParticle) continue
 
@@ -295,7 +295,7 @@
             let arr = []
             for (let i = 0; i < engine.world.bodies.length; i++) {
                 let b = engine.world.bodies[i]
-                if (b.label == "piso") continue
+                if (b.label == "ground") continue
                 let distance = dist(x, y, b.position.x, b.position.y)
                 arr.push({ body: b, distance: distance })
             }
@@ -316,7 +316,7 @@
             for (let i = 0; i < arr.length; i++) {
                 //EACH BODY
                 let b = arr[i]
-                if (b.label == "piso") continue
+                if (b.label == "ground") continue
                 let closestP = findTwoClosestParticles(b.position.x, b.position.y)
 
                 closestP = (closestP || []).filter(k => k.distance < maxDistanceToAttach)

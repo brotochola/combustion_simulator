@@ -45,10 +45,27 @@
             margin: 0px;
             left: 0px;
             top: 0px;
+
         }
 
         #buttons {
-            order: 3
+            order: 3;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: row;
+            background: black;
+            height: 100px;
+        }
+
+        #buttons button {
+            flex: 1;
+            background: gray;
+            padding: 10px;
+            margin-left: 1px;
+            margin-right: 1px;
+            border: 1px solid lightgray;
+            border-radius: 5px;
+            color: white;
         }
     </style>
 
@@ -56,6 +73,7 @@
     <script src="utils.js"></script>
     <script src="particle.js"></script>
     <script src="particleSystem.js"></script>
+
 </head>
 
 <body>
@@ -74,17 +92,23 @@
 
 
     <div id="buttons">
-        <br>
-        <button onclick="    particleSystem.engine.world.gravity.y = 1">turn gravity on</button>
 
-        <button onclick="    particleSystem.engine.world.gravity.y = 0">turn gravity off</button>
-        <br>
-        <button onclick=" particleSystem.addAutomaticConnections();">add connections</button>
-        <br>
+        <button onclick="   particleSystem.toggleGravity()">toggle gravity </button>
+
+
+
+        <button onclick=" particleSystem.addAutomaticConnections(undefined,true);">add connections</button>
+
         <button onclick=" particleSystem.toggleViewConstraints();">toggle view constraints</button>
+        <button onclick=" particleSystem.togglePause();">toggle sim</button>
+        <button onclick=" particleSystem.toggleGooBuilding()">toggle tower of goo kinda building</button>
+        <button onclick=" window.location.reload()">remove all bodies</button>
+
+
     </div>
 
 
+    <script src="alert.js"></script>
 </body>
 
 </html>
