@@ -12,6 +12,11 @@ class ParticleSystem {
         maxNumberOfConnectionsPerBody: 0,
         maxDistanceToAttach: 0,
       },
+      water: {
+        diameter: 10,
+        maxNumberOfConnectionsPerBody: 0,
+        maxDistanceToAttach: 0,
+      },
     };
 
     this.Matter = Matter;
@@ -48,7 +53,11 @@ class ParticleSystem {
   }
 
   addShortCuts() {
+    window.onkeydown = (e) => {
+      window.keyIsDown = e.keyCode;
+    };
     window.onkeyup = (e) => {
+      window.keyIsDown = null;
       console.log("letra", e.keyCode);
       if (e.keyCode == 32) {
         //space bar
@@ -84,6 +93,14 @@ class ParticleSystem {
     fireCanvas.height = normalCanvas.height;
     this.fireContext = fireCanvas.getContext("2d");
     document.body.appendChild(fireCanvas);
+
+    let liquidCanvas = document.createElement("canvas");
+    liquidCanvas.id = "liquidCanvas";
+    this.liquidCanvas = fireCanvas;
+    liquidCanvas.width = normalCanvas.width;
+    liquidCanvas.height = normalCanvas.height;
+    this.liquidContext = liquidCanvas.getContext("2d");
+    document.body.appendChild(liquidCanvas);
   }
 
   runEngine() {
@@ -157,10 +174,16 @@ class ParticleSystem {
       console.log(p.particle);
     }
   }
-  findTwoClosestParticles(x, y) {
+  findTwoClosestParticles(x, y, substance) {
     let arr = [];
-    for (let i = 0; i < this.particles.length; i++) {
-      let b = this.particles[i].body;
+    let chosenParticles;
+    if (substance) {
+      chosenParticles = this.particles.filter((k) => k.substance == substance);
+    } else {
+      chosenParticles = this.particles;
+    }
+    for (let i = 0; i < chosenParticles.length; i++) {
+      let b = chosenParticles[i].body;
       let distance = dist(x, y, b.position.x, b.position.y);
       arr.push({ body: b, distance: distance });
     }
@@ -225,7 +248,7 @@ class ParticleSystem {
       window.isDown = false;
     };
     canvas.onmousemove = (e) => {
-      if (!window.isDown) return;
+      if (!window.isDown && !window.keyIsDown) return;
       let box = canvas.getBoundingClientRect();
       let x = e.x - box.x;
       let y = e.y - box.y;
@@ -241,6 +264,13 @@ class ParticleSystem {
 
         //GOO MODE DOESN'T WORK WHILE DRAGGING!
         this.addParticle(x, y, "wood", 20, undefined, false, false);
+      }
+
+      //KEYS
+      if (window.keyIsDown == 87) {
+        // console.log(1);
+        //W
+        this.addParticle(x, y, "water", 20, undefined, false, false);
       }
     };
   }
@@ -356,18 +386,36 @@ class ParticleSystem {
 
     // console.log(this.COUNTER, particleSystem.totalEnergyContained());
 
-    setTimeout(() => {
-      this.fireContext.clearRect(
-        0,
-        0,
-        this.fireCanvas.width,
-        this.fireCanvas.height
-      );
-    }, this.deltaTime * 1.1);
+    // setTimeout(() => {
+    //   this.fireContext.clearRect(
+    //     0,
+    //     0,
+    //     this.fireCanvas.width,
+    //     this.fireCanvas.height
+    //   );
+    // }, this.deltaTime * 1.1);
+    this.clearFireCanvas();
+    this.clearLiquidCanvas();
 
     for (const particle of this.particles) {
       particle.update(this.COUNTER);
     }
+  }
+  clearFireCanvas() {
+    this.fireContext.clearRect(
+      0,
+      0,
+      this.fireCanvas.width,
+      this.fireCanvas.height
+    );
+  }
+  clearLiquidCanvas() {
+    this.liquidContext.clearRect(
+      0,
+      0,
+      this.liquidCanvas.width,
+      this.liquidCanvas.height
+    );
   }
 
   totalEnergyContained() {
@@ -383,13 +431,19 @@ class ParticleSystem {
     return this.totalEnergyContained() / this.particles.length;
   }
 
-  calculateAverageTemperature() {
+  calculateAverageTemperature(subst) {
     // Calculate the average temperature of all particles
+    let chosenPArticles;
+    if (subst) {
+      chosenPArticles = this.particles.filter((k) => k.substance == subst);
+    } else {
+      chosenPArticles = this.particles;
+    }
     let totalTemperature = 0;
-    for (const particle of this.particles) {
+    for (const particle of chosenPArticles) {
       totalTemperature += particle.temperature;
     }
-    return totalTemperature / this.particles.length;
+    return totalTemperature / chosenPArticles.length;
   }
 
   //   render() {
@@ -464,9 +518,15 @@ class ParticleSystem {
     arr = arr ? arr : this.particles;
     for (let i = 0; i < arr.length; i++) {
       //EACH BODY
-      let b = arr[i].body;
+      //IF THE SUBSTANCE OF THIS PARTICLE IS NOT WOOD, DO NOT CONNECT IT
+      if (arr[i].substance != "wood") continue;
 
-      let closestP = this.findTwoClosestParticles(b.position.x, b.position.y);
+      let b = arr[i].body;
+      let closestP = this.findTwoClosestParticles(
+        b.position.x,
+        b.position.y,
+        "wood"
+      );
 
       //ONLY CLOSE PARTICLES, MADE OF WOOD
       closestP = (closestP || []).filter(

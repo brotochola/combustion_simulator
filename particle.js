@@ -33,8 +33,12 @@ class Particle {
         strokeStyle: getRandomBrownishColor(0.3, 0.7),
       },
       woodGas: {
-        fillStyle: "transparent",
-        strokeStyle: "transparent",
+        fillStyle: "none",
+        strokeStyle: "none",
+      },
+      water: {
+        fillStyle: "blue",
+        strokeStyle: "none",
       },
     };
 
@@ -53,9 +57,6 @@ class Particle {
     // this.heat = 0; // heat being applied to the particle
     this.temperature = temperature || 20;
 
-    this.velocity = { x: 0, y: 0 }; // velocity of the particle
-    // this.gravity = 0; // gravity affecting the particle
-    this.acceleration = { x: 0, y: 0 };
     this.onFire = this.substance == "woodGas";
   }
 
@@ -66,21 +67,25 @@ class Particle {
         lineWidth: this.diameter * 2,
         strokeStyle: makeRGBA(this.defaultColor.strokeStyle),
       },
-
       woodGas: {
-        fillStyle: "transparent",
-        lineWidth: 0,
-        strokeStyle: "transparent",
         visible: false,
       },
+      water: {
+        visible: false,
+      },
+    };
+
+    let slops = {
+      wood: -this.diameter * 0.35,
+      woodGas: this.diameter * 2,
+      water: -3,
     };
 
     let bodyOptions = {
       restitution: this.substance == "wood" ? 0.1 : 0.1,
       mass: this.substance == "wood" ? 1 : 0.0001,
       friction: this.substance == "wood" ? 1 : 0,
-      slop:
-        this.substance == "wood" ? -this.diameter * 0.35 : this.diameter * 2,
+      slop: slops[this.substance],
       // frictionAir: 0,
       // isSensor: true,
       render: renderTypes[this.substance],
@@ -108,11 +113,17 @@ class Particle {
     } else if (this.substance == "woodGas") {
       this.burningTemperature = 200; //lower than wood
       this.maxTemperature = 1200; //roughly accurate
+    } else if (this.substance == "water") {
+      this.meltingTemperature = 100;
+      this.freezingTemperature = 0;
+      this.maxTemperature = 375;
     }
   }
   thermalConductivityAccordingToSubstance() {
     if (this.substance == "wood") this.thermalConductivity = 0.000025;
-    else if (this.substance == "woodGas") this.thermalConductivity = 0.0000025; //10x less
+    else if (this.substance == "woodGas")
+      this.thermalConductivity = 0.0000025; //10x less
+    else if (this.substance == "water") this.thermalConductivity = 0.000075; //water has 3x the thermal conductivity of wood
   }
   calculateEneryContained(energyContained) {
     //energy contained in joules
@@ -136,6 +147,7 @@ class Particle {
     //energy in joules to raise this particles (1mm3) 1 degree C
     if (this.substance == "wood") this.heatCapacity = 0.001025;
     else if (this.substance == "woodGas") this.heatCapacity = 0.0001025;
+    else if (this.substance == "water") this.heatCapacity = 0.0031;
   }
   massAccordingToSubstance() {
     //mass in grams
@@ -184,7 +196,10 @@ class Particle {
     this.onFire = true;
     // if (this.substance == "woodGas") debugger;
 
-    let minEnergyToBeLiberated = this.originalEnergycontained * 0.05;
+    let minEnergyToBeLiberated =
+      this.substance == "wood"
+        ? this.originalEnergycontained * 0.04
+        : this.originalEnergycontained * 0.1;
     let howMuchEnergyGetsActuallyLiberated = minEnergyToBeLiberated;
 
     this.nearParticles = this.getNearParticles();
@@ -249,12 +264,36 @@ class Particle {
       }
     }
   }
-
+  melt() {
+    this.state = "liquid";
+  }
+  freeze() {
+    this.state = "solid";
+  }
+  evaporate() {
+    this.state = "gas";
+  }
   update(COUNTER) {
     this.COUNTER = COUNTER;
     // console.log(this.temperature, this.substance);
-    if (this.temperature > this.burningTemperature) {
+    if (this.burningTemperature && this.temperature > this.burningTemperature) {
       this.burn();
+    }
+
+    if (this.freezingTemperature && this.meltingTemperature) {
+      //DOES THIS SUBSTANCE MELT AND FREEZE?
+      //WOOD AND WOODGAS DON'T
+      //WATER DOES
+      if (
+        this.temperature < this.meltingTemperature &&
+        this.temperature > this.freezingTemperature
+      ) {
+        this.melt();
+      } else if (this.temperature < this.freezingTemperature) {
+        this.freeze();
+      } else if (this.temperature > this.meltingTemperature) {
+        this.evaporate();
+      }
     }
 
     this.x = this.body.position.x;
@@ -327,7 +366,7 @@ class Particle {
   }
 
   drawFlamesForWood() {
-    const context = this.particleSystem.fireCanvas.getContext("2d");
+    const context = this.particleSystem.fireContext;
 
     // Render fire effect when the particle is on fire
     const radius = this.diameter * 4 + Math.random() * this.diameter * 3;
@@ -360,7 +399,7 @@ class Particle {
   }
 
   drawGlowingFlames() {
-    const context = this.particleSystem.fireCanvas.getContext("2d");
+    const context = this.particleSystem.fireContext;
     // Render fire effect when the particle is on fire
     let radius;
     let alpha;
@@ -373,6 +412,7 @@ class Particle {
     }
 
     let intensity = 120 + (this.temperature / this.maxTemperature) * 120;
+    if (isNaN(intensity)) debugger;
     if (intensity > 255) intensity = 255;
     const gradient = context.createRadialGradient(
       this.x,
@@ -399,11 +439,25 @@ class Particle {
     }
     // Render the particle on the canvas
     if (this.onFire) {
-      if (this.substance == "wood") this.drawFlamesForWood();
-      this.drawGlowingFlames();
+      if (this.substance == "wood") {
+        this.drawFlamesForWood();
+        this.drawGlowingFlames();
+      } else if (this.substance == "woodGas") {
+        this.drawGlowingFlames();
+      }
     }
 
     if (this.substance == "wood") this.setColorAccordingToTemperature();
+
+    if (this.substance == "water") this.drawWater();
+  }
+
+  drawWater() {
+    let context = this.particleSystem.liquidContext;
+    context.beginPath();
+    context.arc(this.x, this.y, this.diameter, 0, 2 * Math.PI, false);
+    context.fillStyle = "#1133ff";
+    context.fill();
   }
 
   setColorAccordingToTemperature() {
