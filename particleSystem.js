@@ -50,6 +50,73 @@ class ParticleSystem {
     this.addExtraCanvasForFire();
 
     this.addShortCuts();
+
+    // Matter.Events.on(this.engine, "collisionActive", (e) => {
+    //   this.collisionHandler(e);
+    // });
+  }
+
+  collisionHandler(e) {
+    for (let p of e.pairs) {
+      console.log(p);
+      if (
+        (p.bodyA.particle || {}).substance != "water" ||
+        (p.bodyA.particle || {}).substance != "water"
+      )
+        continue;
+      // console.log(p)
+      // debugger
+      // console.log(p.bodyA, p.bodyB)
+
+      // if (p.bodyA.id != "ground") p.bodyA.isSensor = true
+      // if (p.bodyB.id != "ground") p.bodyB.isSensor = true
+
+      let maxConnectionsPerParticle = 3;
+
+      if (p.bodyA.id == "ground" || p.bodyB.id == "ground") continue;
+      if (
+        this.findOutIfThereIsAlreadyAConstraintWithTheseTwoBodies(
+          p.bodyA,
+          p.bodyB
+        )
+      ) {
+        continue;
+      }
+      if (
+        (p.bodyA.constraints || []).length > 6 ||
+        (p.bodyB.constraints || []).length >= maxConnectionsPerParticle
+      ) {
+        continue;
+      }
+      let newConstraint = this.Matter.Constraint.create({
+        pointA: { x: 0, y: 0 },
+        pointB: { x: 0, y: 0 },
+        // length: diameter,
+        angularStiffness: 1,
+        // isSensor: false,
+        // isSleeping: true,
+        stiffness: 1,
+        damping: 0.01,
+        render: {
+          visible: true,
+          anchors: false,
+          strokeStyle: "white",
+          lineWidth: 1,
+        },
+        bodyA: p.bodyA,
+        bodyB: p.bodyB,
+      });
+
+      if (!Array.isArray(p.bodyA.constraints)) p.bodyA.constraints = [];
+      p.bodyA.constraints.push(newConstraint);
+
+      if (!Array.isArray(p.bodyB.constraints)) p.bodyB.constraints = [];
+      p.bodyB.constraints.push(newConstraint);
+
+      this.world.add(this.engine.world, [newConstraint]);
+
+      console.log("Agregando constraint", newConstraint);
+    }
   }
 
   addShortCuts() {

@@ -55,31 +55,30 @@ class Particle {
     this.burningTemperatureAccordingToSubstance();
 
     this.temperature = temperature || 20;
-    this.stateAccordingToTemperature();
+    this.setStartingState();
 
     this.onFire = this.substance == "woodGas"; //woodgas starts burning
   }
 
-  stateAccordingToTemperature() {
+  setStartingState() {
     if (
       this.temperature < this.meltingTemperature &&
       this.temperature > this.freezingTemperature
     ) {
-      // this.state = "liquid";
-      this.melt();
+      this.state = "liquid";
     } else if (this.temperature < this.freezingTemperature) {
-      // this.state = "solid";
-      this.freeze();
+      this.state = "solid";
+      // this.freeze();
     } else if (this.temperature > this.meltingTemperature) {
-      // this.state = "gas";
-      this.evaporate();
+      this.state = "gas";
+      // this.evaporate();
     } else if (this.temperature < this.meltingTemperature) {
-      // this.state = "liquid";
-      this.condense();
+      this.state = "liquid";
+      // this.condense();
     }
+  }
 
-    if (this.temperature < -272) this.temperature = -272;
-
+  stateAccordingToTemperature() {
     if (
       this.freezingTemperature == undefined ||
       this.meltingTemperature == undefined
@@ -89,6 +88,35 @@ class Particle {
     //DOES THIS SUBSTANCE MELT AND FREEZE?
     //WOOD AND WOODGAS DON'T
     //WATER DOES
+
+    if (
+      this.temperature < this.meltingTemperature &&
+      this.temperature > this.freezingTemperature &&
+      this.state == "solid"
+    ) {
+      // this.state = "liquid";
+      this.melt();
+    } else if (
+      this.temperature < this.freezingTemperature &&
+      this.state == "liquid"
+    ) {
+      // this.state = "solid";
+      this.freeze();
+    } else if (
+      this.temperature > this.meltingTemperature &&
+      this.state == "liquid"
+    ) {
+      // this.state = "gas";
+      this.evaporate();
+    } else if (
+      this.temperature < this.meltingTemperature &&
+      this.state == "gas"
+    ) {
+      // this.state = "liquid";
+      this.condense();
+    }
+
+    if (this.temperature < -272) this.temperature = -272;
   }
 
   createBody() {
@@ -211,8 +239,8 @@ class Particle {
       (k) => k.body.id != this.body.id
     );
 
-    if ((opt || {}).leaveAshes) {
-    }
+    // if ((opt || {}).leaveAshes) {
+    // }
   }
   releaseWoodGas(energy) {
     //   addParticle(x, y, substance, temperature, energy) {
@@ -303,11 +331,15 @@ class Particle {
       }
     }
   }
-  melt() {
-    this.state = "liquid";
+
+  removeAllMyConstraints() {
     for (let constr of this.body.constraints) {
       this.world.remove(this.engine.world, constr);
     }
+  }
+  melt() {
+    this.state = "liquid";
+    this.removeAllMyConstraints();
   }
   freeze() {
     this.state = "solid";
@@ -320,9 +352,11 @@ class Particle {
   }
   evaporate() {
     this.state = "gas";
+    this.removeAllMyConstraints();
   }
   condense() {
     this.state = "liquid";
+    this.removeAllMyConstraints();
   }
 
   heatUp(degrees) {
