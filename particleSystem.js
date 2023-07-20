@@ -13,9 +13,9 @@ class ParticleSystem {
         maxDistanceToAttach: 0,
       },
       water: {
-        diameter: 10,
-        maxNumberOfConnectionsPerBody: 0,
-        maxDistanceToAttach: 0,
+        diameter: 4,
+        maxNumberOfConnectionsPerBody: 10,
+        maxDistanceToAttach: 40,
       },
     };
 
@@ -65,9 +65,6 @@ class ParticleSystem {
       } else if (e.keyCode == 71) {
         //G
         this.toggleGravity();
-      } else if (e.keyCode == 67) {
-        //C
-        this.toggleViewConstraints();
       }
     };
   }
@@ -102,13 +99,14 @@ class ParticleSystem {
     this.liquidContext = liquidCanvas.getContext("2d");
     document.body.appendChild(liquidCanvas);
   }
+  createBoxOfParticles(x, y, lines, rows, substance) {}
 
   runEngine() {
     this.render = Matter.Render.create({
       element: document.body,
       engine: this.engine,
       options: {
-        pixelRatio: "auto",
+        // pixelRatio: "auto",
         // showPositions: true,
         width: window.innerWidth,
         // showVertexNumbers: true,
@@ -145,6 +143,8 @@ class ParticleSystem {
 
     // create runner
     this.runner = this.Matter.Runner.create();
+    // this.runner.isFixed = true;
+    // this.runner.delta = 10;
 
     // run the engine
     this.Matter.Runner.run(this.runner, this.engine);
@@ -158,7 +158,7 @@ class ParticleSystem {
     );
   }
   indicateWhichParticleItIs(x, y) {
-    let closeP = this.findTwoClosestParticles(x, y);
+    let closeP = this.getParticlesAndTheirDistance(x, y);
     if (!closeP[0]) return;
 
     const maxDistance = this.config["wood"].diameter * 2;
@@ -170,11 +170,12 @@ class ParticleSystem {
       let p = closeP[0].body;
       window.tempParticle = p.particle;
       //DEBUG
-      p.particle.temperature += 200;
+      // p.particle.temperature += 200;
       console.log(p.particle);
     }
   }
-  findTwoClosestParticles(x, y, substance) {
+
+  getParticlesAndTheirDistance(x, y, substance) {
     let arr = [];
     let chosenParticles;
     if (substance) {
@@ -192,7 +193,7 @@ class ParticleSystem {
     return newArr;
   }
   removeParticle(x, y) {
-    let closePs = this.findTwoClosestParticles(x, y);
+    let closePs = this.getParticlesAndTheirDistance(x, y);
     if (!closePs[0]) return;
     let closest = closePs[0];
 
@@ -220,7 +221,7 @@ class ParticleSystem {
     return isColliding;
   }
   addClickListenerToCanvas() {
-    let canvas = document.querySelector("canvas");
+    let canvas = this.render.canvas;
     canvas.onmouseleave = (e) => (window.isDown = false);
     canvas.onmousedown = (e) => {
       window.isDown = e.which;
@@ -271,6 +272,34 @@ class ParticleSystem {
         // console.log(1);
         //W
         this.addParticle(x, y, "water", 20, undefined, false, false);
+      } else if (window.keyIsDown == 72) {
+        //H (heat)
+        let closeParticles = this.getParticlesAndTheirDistance(x, y, null);
+        for (let p of closeParticles) {
+          let part = p.body.particle || {};
+
+          if (p.distance < 25) {
+            let part = p.body.particle || {};
+            part.highlight();
+            part.heatUp(5);
+          } else {
+            part.unHighlight();
+          }
+        }
+      } else if (window.keyIsDown == 67) {
+        //C (cold)
+        let closeParticles = this.getParticlesAndTheirDistance(x, y, null);
+        for (let p of closeParticles) {
+          let part = p.body.particle || {};
+
+          if (p.distance < 25) {
+            let part = p.body.particle || {};
+            part.highlight();
+            part.heatUp(-50);
+          } else {
+            part.unHighlight();
+          }
+        }
       }
     };
   }
@@ -511,34 +540,36 @@ class ParticleSystem {
 
     let howManyConnectionsWeMadeNow = 0;
 
-    let maxDistanceDependingOnGooModeOrNot =
-      this.config["wood"].maxDistanceToAttach *
-      (doNotCareAboutGooBuilding && this.gooBuilding ? 2 : 1);
-
     arr = arr ? arr : this.particles;
     for (let i = 0; i < arr.length; i++) {
       //EACH BODY
-      //IF THE SUBSTANCE OF THIS PARTICLE IS NOT WOOD, DO NOT CONNECT IT
-      if (arr[i].substance != "wood") continue;
+
+      if (arr[i].substance == "woodGas") continue;
+
+      let maxDistanceDependingOnGooModeOrNot =
+        this.config[arr[i].substance].maxDistanceToAttach *
+        (doNotCareAboutGooBuilding && this.gooBuilding ? 2 : 1);
 
       let b = arr[i].body;
-      let closestP = this.findTwoClosestParticles(
+      let closestP = this.getParticlesAndTheirDistance(
         b.position.x,
         b.position.y,
-        "wood"
+        arr[i].substance
       );
 
-      //ONLY CLOSE PARTICLES, MADE OF WOOD
+      //ONLY CLOSE PARTICLES, MADE OF THE SAME SUBSTANCE
       closestP = (closestP || []).filter(
         (k) =>
           k.distance < maxDistanceDependingOnGooModeOrNot &&
-          k.body.particle.substance == "wood"
+          k.body.particle.substance == arr[i].substance
       );
 
       //GET THE CLOSEST BODIES
       for (let i = 0; i < closestP.length; i++) {
         // if (counterOfConstraints >= numberOfAutomaticConnections) break
         let closeParticle = closestP[i];
+
+        let closePArticleSubstance = closeParticle.body.particle.substance;
 
         if (!closeParticle) continue;
         if (closeParticle.body == b) continue;
@@ -555,9 +586,9 @@ class ParticleSystem {
         //I KEEP TRACK OF THIS MYSELF IN EACH BODY
         if (
           (b.constraints || []).length >=
-            this.config["wood"].maxNumberOfConnectionsPerBody ||
+            this.config[closePArticleSubstance].maxNumberOfConnectionsPerBody ||
           (closeParticle.constraints || []).length >=
-            this.config["wood"].maxNumberOfConnectionsPerBody
+            this.config[closePArticleSubstance].maxNumberOfConnectionsPerBody
         ) {
           break;
         }
@@ -567,15 +598,22 @@ class ParticleSystem {
         let newConstraint = this.Matter.Constraint.create({
           pointA: { x: 0, y: 0 },
           pointB: { x: 0, y: 0 },
-          // length: diameter * 2,
+          // length:
+
           angularStiffness: 0.9,
-          stiffness: 0.9,
+          stiffness: 1,
           damping: 0.01,
           render: {
             visible: true,
             anchors: false,
-            strokeStyle: makeRGBA(getRandomBrownishColor(0.1, 0.22)),
-            lineWidth: this.config["wood"].diameter * 3,
+            strokeStyle:
+              closePArticleSubstance == "wood"
+                ? makeRGBA(getRandomBrownishColor(0.1, 0.22))
+                : "rgba(255,255,255,0.5)",
+            lineWidth:
+              closePArticleSubstance == "wood"
+                ? this.config[closePArticleSubstance].diameter * 3
+                : 1,
           },
           bodyA: closeParticle.body,
           bodyB: b,
