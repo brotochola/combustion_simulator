@@ -1,0 +1,357 @@
+<html>
+
+<head>
+
+    <style>
+        body {
+            height: 100vh;
+            width: 100vw;
+            background: #333;
+            overflow: hidden;
+            /* -webkit-filter: url('#filter') !important;
+            filter: url('#filter') !important; */
+        }
+
+        canvas {
+            border: none !important;
+            outline: none !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            position: absolute;
+            top: 0;
+            left: 0 !important;
+            /* -webkit-filter: url('#filter') !important;
+            filter: url('#filter') !important; */
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
+    <script src="liquidfun.js"></script>
+    <script src="cell.js"></script>
+    <script src="particle.js"></script>
+    <script src="particleSystem.js"></script>
+
+
+
+    <script>
+
+        // var particleSystem;
+
+
+
+        // const createGrid = () => {
+        //     for (let i = 0; i < window.innerWidth / CELL_SIZE; i++) {
+        //         grid[i] = [];
+        //         for (let j = 0; j < window.innerHeight / CELL_SIZE; j++) {
+        //             grid[i][j] = new Cell(i, j, CELL_SIZE);
+        //         }
+        //     }
+        //     return grid;
+        // };
+
+
+        // function createPixiStage(cb) {
+
+
+        //     renderer = PIXI.autoDetectRenderer(width, height, {
+        //         backgroundColor: "#ffffff",
+        //         antialias: true,
+        //         transparent: false,
+        //         resolution: 1,
+        //         autoresize: false,
+        //     });
+        //     loader = PIXI.Loader.shared;
+        //     pixiApp = new PIXI.Application({ width: width, height: height });
+
+        //     loader.add("particle", "ball.png");
+        //     loader.load((loader, resources) => {
+        //         res = resources;
+
+        //         if (cb instanceof Function) cb();
+        //     });
+        // }
+
+        // const handleClickOnCanvas = e => {
+
+        // }
+        // const handleMouseMoveOnCanvas = e => {
+
+        // }
+
+        // const createParticles = () => {
+
+        //     var circle = new b2CircleShape();
+        //     circle.position.Set(window.innerWidth / 2, -window.innerHeight / 2);
+        //     circle.radius = 100;
+        //     var pgd = new b2ParticleGroupDef();
+        //     // console.log("#particle group", pgd)
+        //     // pgd.groupFlags = b2_rigidParticleGroup | b2_solidParticleGroup;
+        //     pgd.shape = circle;
+        //     pgd.color.Set(255, 0, 0, 255);
+        //     let partGr = particleSystem.CreateParticleGroup(pgd);
+
+        //     // console.log(partGr)
+
+
+        //     for (let i = 0; i < particleSystem.GetParticleCount() / 2; i++) {
+        //         particles.push(new Particle())
+        //     }
+        // }
+
+        // function init() {
+        //     console.log("init")
+        //     grid = createGrid()
+
+        //     createPixiStage(() => {
+        //         canvas = pixiApp.view;
+
+        //         canvas.id = "renderCanvas";
+        //         canvas.onclick = (e) => handleClickOnCanvas(e);
+        //         canvas.onmousemove = (e) => handleMouseMoveOnCanvas(e);
+        //         document.body.appendChild(canvas);
+        //         createBox2DWorld()
+        //         createFloorAndObjects()
+        //         createParticles()
+        //         gameLoop()
+        //     })
+
+
+        // }
+
+        // const createFloorAndObjects = () => {
+
+        //     console.log("createFloorAndObjects")
+        //     // camera.position.y = 3;
+        //     // camera.position.z = 6;
+
+        //     var bd = new b2BodyDef();
+        //     ground = world.CreateBody(bd);
+
+        //     //GROUND
+        //     var shape1 = new b2PolygonShape();
+        //     var vertices = shape1.vertices;
+        //     vertices.push(new b2Vec2(0, -height))
+        //     vertices.push(new b2Vec2(width, -height));
+        //     vertices.push(new b2Vec2(width, -height - 50));
+        //     vertices.push(new b2Vec2(0, -height - 50));
+        //     ground.CreateFixtureFromShape(shape1, 0);
+
+
+        //     var roof = new b2PolygonShape();
+
+        //     roof.vertices.push(new b2Vec2(0, 0))
+        //     roof.vertices.push(new b2Vec2(0, -10));
+        //     roof.vertices.push(new b2Vec2(width, 0));
+        //     roof.vertices.push(new b2Vec2(width, -10));
+        //     ground.CreateFixtureFromShape(roof, 0);
+
+        //     //LEFT WALL
+        //     var shape2 = new b2PolygonShape();
+        //     var vertices = shape2.vertices;
+        //     vertices.push(new b2Vec2(0, 0));
+        //     vertices.push(new b2Vec2(10, 0));
+        //     vertices.push(new b2Vec2(0, -height));
+        //     vertices.push(new b2Vec2(10, -height));
+        //     ground.CreateFixtureFromShape(shape2, 0);
+
+
+        //     //RIGHT WALL
+        //     var shape2 = new b2PolygonShape();
+        //     var vertices = shape2.vertices;
+        //     vertices.push(new b2Vec2(width, 0));
+        //     vertices.push(new b2Vec2(width + 10, 0));
+        //     vertices.push(new b2Vec2(width, -height));
+        //     vertices.push(new b2Vec2(width + 10, -height));
+        //     ground.CreateFixtureFromShape(shape2, 0);
+
+        //     psd = new b2ParticleSystemDef();
+        //     // console.log("partycle system", psd)
+        //     psd.powderStrength = 100000
+        //     psd.springStrength = 999
+        //     psd.lifetimeGranularity = 99
+        //     psd.surfaceTensionNormalStrength = 99
+        //     psd.surfaceTensionPressureStrength = 9999
+        //     psd.viscousStrength = -9999
+        //     psd.radius = 4;
+        //     particleSystem = world.CreateParticleSystem(psd);
+
+        //     // one group
+        //     //AGUA!!!
+        //     // var circle = new b2CircleShape();
+        //     // circle.position.Set(100, 0);
+        //     // circle.radius = 100;
+        //     // var pgd = new b2ParticleGroupDef();
+        //     // // console.log("#particle group", pgd)
+        //     // // pgd.groupFlags = b2_rigidParticleGroup | b2_solidParticleGroup;
+        //     // pgd.shape = circle;
+        //     // pgd.color.Set(255, 0, 0, 255);
+        //     // let partGr = particleSystem.CreateParticleGroup(pgd);
+        //     // console.log("#partGR", partGr)
+
+        //     // two group
+        //     //ELASTICO
+        //     // circle = new b2CircleShape();
+        //     // circle.position.Set(-1, 3);
+        //     // circle.radius = 0.5;
+        //     // pgd = new b2ParticleGroupDef();
+        //     // // pgd.groupFlags = b2_springParticle | b2_solidParticleGroup;;
+        //     // pgd.flags = b2_elasticParticle;
+        //     // // console.log(pgd.flags)
+        //     // // pgd.groupFlags = b2_solidParticleGroup;
+        //     // pgd.shape = circle;
+        //     // pgd.color.Set(0, 255, 0, 255);
+        //     // particleSystem.CreateParticleGroup(pgd);
+
+        //     // third group
+        //     //bloque azul rigido
+        //     // var box = new b2PolygonShape();
+        //     // var pgd = new b2ParticleGroupDef();
+        //     // box.SetAsBoxXY(1, 0.5);
+        //     // pgd.groupFlags = b2_rigidParticleGroup | b2_solidParticleGroup;;
+        //     // pgd.position.Set(1, 4);
+        //     // pgd.angle = -0.5;
+        //     // pgd.angularVelocity = 2;
+        //     // pgd.shape = box;
+        //     // pgd.color.Set(0, 0, 255, 255);
+        //     // particleSystem.CreateParticleGroup(pgd);
+
+
+        //     // MANEJABLE!
+
+        //     // let bodyDef3 = new b2BodyDef()
+        //     // // console.log("#bodyDef3", bodyDef3)
+        //     // var circle = new b2CircleShape();
+        //     // bodyDef3.type = b2_dynamicBody;
+        //     // var body = world.CreateBody(bodyDef3);
+        //     // // console.log("body", body)
+        //     // circle.position.Set(0, 8);
+        //     // circle.radius = 0.2;
+        //     // body.CreateFixtureFromShape(circle, 10);
+        // }
+
+
+
+        // const createBox2DWorld = () => {
+        //     gravity = new b2Vec2(0, -1000);
+        //     world = new b2World(gravity);
+        // }
+
+        // const oneStepOfGameLoop = () => {
+        //     // tickOfQuadTree();
+
+        //     world.Step(timeStep, velocityIterations, positionIterations);
+
+
+        //     // for (p of animals) {
+        //     //     animal.tick(FRAMENUM);
+        //     // }
+        // };
+
+
+
+
+        // function drawParticleSystem(system) {
+
+        //     var particlesFromLiquidFun = system.GetPositionBuffer();
+
+        //     // var color = system.GetColorBuffer();
+        //     // var maxParticles = particlesFromLiquidFun.length
+
+
+        //     for (var i = 0; i < particlesFromLiquidFun.length; i += 2) {
+
+        //         if (particles[i * 0.5]) {
+        //             let x = particlesFromLiquidFun[i]
+        //             let y = particlesFromLiquidFun[i + 1]
+        //             particles[i * 0.5].update(x, y)
+        //         }
+
+
+        //     }
+        // }
+
+
+        // const renderEverything = () => {
+        //     // if (CLEAR_FRAME) {
+        //     //   //  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        //     //   ctx.rect(0, 0, width, height);
+        //     //   ctx.fillStyle = "#544a4a";
+        //     //   ctx.fill();
+        //     // }
+        //     // if (CLEAR_FRAME_OPACITY) {
+        //     //   ctx.rect(0, 0, width, height);
+        //     //   ctx.fillStyle = "#00000004";
+        //     //   ctx.fill();
+        //     // }
+
+        //     // if (RENDER_GRID) {
+        //     //     for (let i = 0; i < height / cellWidth; i++) {
+        //     //         for (let j = 0; j < width / cellWidth; j++) {
+        //     //             grid[i][j].render(FRAMENUM);
+        //     //         }
+        //     //     }
+        //     // }
+
+        //     // if (SHOW_QUADTREE && USE_QUADTREE) drawQuadtree(tree);
+
+        //     // for (animal of animals) animal.render(FRAMENUM);
+
+        //     for (var i = 0, max = world.particleSystems.length; i < max; i++) {
+        //         drawParticleSystem(world.particleSystems[i]);
+        //     }
+
+        //     pixiApp.render(pixiApp.stage);
+        // };
+
+        // const gameLoop = () => {
+        //     if (!pause) {
+        //         // if (animals.length == 0) {
+        //         //   alert("all animals died");
+        //         //   return;
+        //         // }
+        //         FRAMENUM++;
+        //         oneStepOfGameLoop();
+
+        //         // if (renderCheckBox.checked) {
+        //         //     if (document.querySelector("#renderCanvas").style.display != "block")
+        //         //         document.querySelector("#renderCanvas").style.display = "block";
+
+        //         //     renderEverything();
+        //         // } else {
+        //         //     if (document.querySelector("#renderCanvas").style.display != "none")
+        //         //         document.querySelector("#renderCanvas").style.display = "none";
+        //         // }
+
+
+
+        //         window.durationOfFrame = Date.now() - (window.lastFrame || 0);
+        //         window.lastFrame = Date.now();
+        //         window.frameRate = 1000 / durationOfFrame;
+
+        //         // if (SAVE_GENERAL_STATS) {
+        //         //     getStatsData();
+        //         //     showDataInControlPanel();
+        //         // }
+
+        //         renderEverything()
+        //         requestAnimationFrame(gameLoop);
+        //     }
+        // };
+
+
+        var particleSystem, world;
+        function startItAll() {
+            particleSystem = new ParticleSystem(world)
+            particleSystem.init()
+        }
+
+
+    </script>
+
+</head>
+
+<body onload="startItAll()">
+
+</body>
+
+</html>
