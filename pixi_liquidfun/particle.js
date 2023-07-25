@@ -1,15 +1,20 @@
 class Particle {
   constructor(x, y, partSys, substance) {
     this.substance = substance;
+
+    const colors = {
+      water: "0x5555ff",
+      wood: "0x995500",
+    };
+
+    this.color = colors[this.substance];
     this.particleSystem = partSys;
     this.x = x;
     this.y = y;
-    this.graphics = new PIXI.Sprite(partSys.res[this.substance].texture);
-    this.graphics.anchor.set(0.5);
 
-    this.graphics.scale.x =
-      partSys.PARTICLE_WIDTH / partSys.res[this.substance].data.width;
-    this.graphics.scale.y = this.graphics.scale.x;
+    // this.createSprite();
+
+    this.createCircle();
 
     // pixiApp.stage.addChild(graphics);
 
@@ -22,6 +27,29 @@ class Particle {
     partSys.pixiApp.stage.addChild(this.graphics);
   }
 
+  createSprite() {
+    this.graphics = new PIXI.Sprite(
+      this.particleSystem.res[this.substance].texture
+    );
+    this.graphics.anchor.set(0.5);
+
+    this.graphics.scale.x =
+      this.particleSystem.PARTICLE_WIDTH /
+      this.particleSystem.res[this.substance].data.width;
+    this.graphics.scale.y = this.graphics.scale.x;
+  }
+
+  createCircle() {
+    this.graphics = new PIXI.Graphics();
+    this.graphics.beginFill(this.color);
+    this.graphics.drawCircle(
+      this.x,
+      this.y,
+      this.particleSystem.PARTICLE_WIDTH / 2
+    );
+    this.graphics.endFill();
+    this.particleSystem.pixiApp.stage.addChild(this.graphics);
+  }
   render() {
     this.graphics.x = this.x;
     this.graphics.y = -this.y;

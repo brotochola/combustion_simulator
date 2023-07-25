@@ -62,17 +62,17 @@ class Particle {
 
   setStartingState() {
     if (
-      this.temperature < this.meltingTemperature &&
+      this.temperature < this.evaporationTemperature &&
       this.temperature > this.freezingTemperature
     ) {
       this.state = "liquid";
     } else if (this.temperature < this.freezingTemperature) {
       this.state = "solid";
       // this.freeze();
-    } else if (this.temperature > this.meltingTemperature) {
+    } else if (this.temperature > this.evaporationTemperature) {
       this.state = "gas";
       // this.evaporate();
-    } else if (this.temperature < this.meltingTemperature) {
+    } else if (this.temperature < this.evaporationTemperature) {
       this.state = "liquid";
       // this.condense();
     }
@@ -81,7 +81,7 @@ class Particle {
   stateAccordingToTemperature() {
     if (
       this.freezingTemperature == undefined ||
-      this.meltingTemperature == undefined
+      this.evaporationTemperature == undefined
     ) {
       return;
     }
@@ -90,7 +90,7 @@ class Particle {
     //WATER DOES
 
     if (
-      this.temperature < this.meltingTemperature &&
+      this.temperature < this.evaporationTemperature &&
       this.temperature > this.freezingTemperature &&
       this.state == "solid"
     ) {
@@ -103,13 +103,13 @@ class Particle {
       // this.state = "solid";
       this.freeze();
     } else if (
-      this.temperature > this.meltingTemperature &&
+      this.temperature > this.evaporationTemperature &&
       this.state == "liquid"
     ) {
       // this.state = "gas";
       this.evaporate();
     } else if (
-      this.temperature < this.meltingTemperature &&
+      this.temperature < this.evaporationTemperature &&
       this.state == "gas"
     ) {
       // this.state = "liquid";
@@ -123,7 +123,7 @@ class Particle {
     let renderTypes = {
       wood: {
         fillStyle: makeRGBA(this.defaultColor.fillStyle),
-        lineWidth: this.diameter * 2,
+        lineWidth: 0, //this.diameter * 2,
         strokeStyle: makeRGBA(this.defaultColor.strokeStyle),
       },
       woodGas: {
@@ -135,9 +135,9 @@ class Particle {
     };
 
     let slops = {
-      wood: -this.diameter * 0.35,
-      woodGas: this.diameter * 2,
-      water: -this.diameter,
+      wood: 0, // this.diameter,
+      woodGas: -this.diameter * 2,
+      water: -1, //this.diameter,
     };
 
     //for the simulation, not to calculate energies:
@@ -157,6 +157,19 @@ class Particle {
       isStatic: !!this.isStatic,
       // density: 99999999999999
       // mass: 0
+      plugin: {
+        // attractors: [
+        //   (bodyA, bodyB) => {
+        //     let factor = this.getAttractionFactorAccordingToTemperature();
+        //     let distX = bodyA.position.x - bodyB.position.x;
+        //     let distY = bodyA.position.y - bodyB.position.y;
+        //     return {
+        //       x: (bodyA.position.x - bodyB.position.x) * 1e-6 * factor,
+        //       y: (bodyA.position.y - bodyB.position.y) * 1e-6 * factor,
+        //     };
+        //   },
+        // ],
+      },
     };
 
     this.body = this.Matter.Bodies.circle(
@@ -171,6 +184,36 @@ class Particle {
 
     this.world.add(this.engine.world, [this.body]);
   }
+
+  getAttractionFactorAccordingToTemperature() {
+    // -272 :2
+    // this.freezingTemperature -> 1
+    // this.evaporationTemperature ->0
+    // this.maxTemperature -> -1
+
+    if (this.temperature < this.freezingTemperature) {
+      let maxFactor = 2;
+      let minFactor = 1;
+      // -272 -> maxFactor
+      // this.freezingTemperature ->minFactor
+      // this.temperature -> x
+
+      let m = (maxFactor - minFactor) / (-this.freezingTemperature - 272);
+
+      let b =
+        maxFactor +
+        (272 * (maxFactor - minFactor)) / (-this.freezingTemperature - 272);
+
+      return m * this.temperature + b;
+    } else if (
+      this.temperature > this.freezingTemperature &&
+      this.temperature < this.evaporationTemperature
+    ) {
+      return 0;
+    } else if (this.temperature > this.evaporationTemperature) {
+      return -1;
+    }
+  }
   burningTemperatureAccordingToSubstance() {
     if (this.substance == "wood") {
       this.burningTemperature = 250;
@@ -179,7 +222,7 @@ class Particle {
       this.burningTemperature = 200; //lower than wood
       this.maxTemperature = 1200; //roughly accurate
     } else if (this.substance == "water") {
-      this.meltingTemperature = 100;
+      this.evaporationTemperature = 100;
       this.freezingTemperature = 0;
       this.maxTemperature = 375;
     }
@@ -402,7 +445,14 @@ class Particle {
       this.applyForceUpwards();
     }
 
+    this.checkIfItWentToHigh();
+
     this.render();
+  }
+  checkIfItWentToHigh() {
+    if (this.y < -window.innerHeight * 4) {
+      this.remove();
+    }
   }
 
   applyForceUpwards() {
@@ -548,7 +598,7 @@ class Particle {
     context.fillStyle = "#1133ff";
     context.fill();
 
-    let strokeCol = (this.temperature / this.meltingTemperature) * 255;
+    let strokeCol = (this.temperature / this.evaporationTemperature) * 255;
     if (strokeCol > 255) strokeCol = 255;
     if (strokeCol < 0) strokeCol = 0;
 

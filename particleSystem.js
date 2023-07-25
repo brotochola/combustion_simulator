@@ -20,6 +20,7 @@ class ParticleSystem {
     };
 
     this.Matter = Matter;
+    // Matter.use(MatterAttractors);
     this.engine = Matter.Engine.create();
     this.world = Matter.World;
 
@@ -177,6 +178,7 @@ class ParticleSystem {
         // showPositions: true,
         width: window.innerWidth,
         // showVertexNumbers: true,
+        constraintIterations: 4,
         height: this.worldHeight,
         wireframes: false, // <-- important
         // showAngleIndicator: true,
@@ -188,7 +190,7 @@ class ParticleSystem {
       mouse: mouse,
       constraint: {
         // length: 100,
-        stiffness: 0.5,
+        stiffness: 1,
         damping: 0,
         render: {
           anchors: true,
@@ -287,6 +289,29 @@ class ParticleSystem {
     }
     return isColliding;
   }
+
+  createStick(w, h) {
+    let arr = [];
+    let diam = this.config.wood.diameter;
+    let gap = diam - 2;
+    for (
+      let x = 100;
+      x < 100 + w * 2 * diam;
+      x += this.config.wood.diameter + gap
+    ) {
+      for (
+        let y = 100;
+        y < 100 + h * 2 * diam;
+        y += this.config.wood.diameter + gap
+      ) {
+        arr.push(
+          this.addParticle(x, y, "wood", 20, undefined, false, this.gooBuilding)
+        );
+      }
+    } //for
+    this.addAutomaticConnections(arr);
+  }
+
   addClickListenerToCanvas() {
     let canvas = this.render.canvas;
     canvas.onmouseleave = (e) => (window.isDown = false);
@@ -471,6 +496,7 @@ class ParticleSystem {
     if (doGooBuilding) {
       this.addAutomaticConnections([particle]);
     }
+    return particle;
   }
 
   onTick(e) {
@@ -607,7 +633,7 @@ class ParticleSystem {
 
     let howManyConnectionsWeMadeNow = 0;
 
-    arr = arr ? arr : this.particles;
+    arr = arr ? arr : this.particles.filter((k) => k.substance == "wood");
     for (let i = 0; i < arr.length; i++) {
       //EACH BODY
 

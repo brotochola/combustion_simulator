@@ -9,7 +9,7 @@ class ParticleSystem {
     this.FRAMENUM = 0;
     this.grid = [];
     this.CELL_SIZE = 30;
-    this.PARTICLE_WIDTH = 4;
+    this.PARTICLE_WIDTH = 6;
 
     this.particles = [];
     this.canvas;
@@ -111,6 +111,9 @@ class ParticleSystem {
       this.gameLoop();
     });
   }
+
+  handleMouseMoveOnCanvas() {}
+  handleClickOnCanvas() {}
 
   createFloorAndObjects = () => {
     let height = this.height;

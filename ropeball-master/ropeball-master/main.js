@@ -50,9 +50,9 @@ let ropeBallThreadManager = new RopeBallThreadManager(
   8,
   canvas.width,
   canvas.height,
-  4,
+  3,
   1,
-  3000,
+  5000,
   0,
   1,
   15
