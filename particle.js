@@ -59,6 +59,7 @@ class Particle {
     this.setStartingState();
 
     this.onFire = this.substance == "woodGas"; //woodgas starts burning
+    this.updateMyPositionInCell();
   }
 
   setStartingState() {
@@ -274,6 +275,9 @@ class Particle {
 
   remove(opt) {
     // console.log("removing");
+
+    this.cell.removeMe(this);
+
     for (let constr of this.body.constraints) {
       this.world.remove(this.engine.world, constr);
     }
@@ -416,8 +420,52 @@ class Particle {
   heatUp(degrees) {
     this.temperature += degrees;
   }
+  updateMyPositionInCell() {
+    // let ret;
+
+    this.cellX = Math.floor(this.x / this.particleSystem.CELL_SIZE);
+    this.cellY = -Math.floor(-this.y / this.particleSystem.CELL_SIZE);
+    let newCell = (this.particleSystem.grid[this.cellY] || [])[this.cellX];
+
+    if (this.cell && newCell && this.cell == newCell) {
+      //you're already here
+      return;
+    }
+
+    if (this.cell) this.cell.removeMe(this);
+
+    try {
+      this.cell = newCell;
+      this.cell.addMe(this);
+    } catch (e) {
+      console.error("this particle is not in any cell", this.cellX, this.cellY);
+      // debugger;
+    }
+
+    // return ret;
+  }
+
+  getParticlesFromCell() {
+    if (!this.cell) return;
+    return this.cell.particlesHere;
+  }
+  getParticlesFromCloseCells() {
+    //from this cell and neighbour cells
+    if (!this.cell) return [];
+    let arr = [];
+    arr.push(...this.getParticlesFromCell());
+
+    for (let cell of this.cell.getNeighbours()) {
+      for (let p of cell.particlesHere) {
+        arr.push(p);
+      }
+    }
+    return arr;
+  }
+
   update(COUNTER) {
     this.COUNTER = COUNTER;
+
     // console.log(this.temperature, this.substance);
     if (this.burningTemperature && this.temperature > this.burningTemperature) {
       this.burn();
@@ -429,6 +477,8 @@ class Particle {
 
     this.x = this.body.position.x;
     this.y = this.body.position.y;
+
+    this.updateMyPositionInCell();
 
     if (this.energyContained < 1) {
       // console.log(1);
@@ -461,7 +511,7 @@ class Particle {
     this.render();
   }
   checkIfItWentToHigh() {
-    if (this.y < -window.innerHeight * 4) {
+    if (this.y < -window.innerHeight) {
       this.remove();
     }
   }
@@ -492,9 +542,12 @@ class Particle {
 
   getNearParticles() {
     let arr = [];
-    for (let p of this.particleSystem.particles) {
-      let difX = Math.abs(this.body.position.x - p.body.position.x);
-      let difY = Math.abs(this.body.position.y - p.body.position.y);
+    let closeParts = this.getParticlesFromCloseCells();
+    if (!Array.isArray(closeParts)) debugger;
+
+    for (let p of closeParts) {
+      let difX = Math.abs(this.x - p.x);
+      let difY = Math.abs(this.y - p.y);
       // let difY
       if (difX < this.diameter * 6 && difY < this.diameter * 6) {
         if (p != this) arr.push(p);

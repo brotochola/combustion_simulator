@@ -4,6 +4,7 @@
 class ParticleSystem {
   constructor(canvasId, width, height, Matter) {
     this.COUNTER = 0;
+
     this.config = {
       wood: {
         diameter: 4,
@@ -22,6 +23,8 @@ class ParticleSystem {
       },
     };
 
+    this.CELL_SIZE = this.config.wood.diameter * 10;
+
     this.Matter = Matter;
     // Matter.use(MatterAttractors);
     this.engine = Matter.Engine.create();
@@ -38,6 +41,7 @@ class ParticleSystem {
 
     this.constraintsVisible = true;
     this.gooBuilding = false;
+    this.createGrid();
 
     this.addFloor();
 
@@ -394,6 +398,21 @@ class ParticleSystem {
       p.unHighlight();
     }
   }
+
+  createGrid = () => {
+    this.grid = [];
+    for (
+      let i = Math.floor((-1.5 * this.worldHeight) / this.CELL_SIZE);
+      i < this.worldHeight / this.CELL_SIZE + 2;
+      i++
+    ) {
+      this.grid[i] = [];
+      for (let j = -2; j < window.innerWidth / this.CELL_SIZE + 2; j++) {
+        this.grid[i][j] = new Cell(i, j, this.CELL_SIZE, this.grid);
+      }
+    }
+    return this.grid;
+  };
 
   addClickListenerToCanvas() {
     let canvas = this.render.canvas;
