@@ -2,10 +2,7 @@
 
 i wanted to simulate combustion, and how energy is liberated, that energy increases the temperature of close particles, and from a certain temp the chemical change happens, releasing more energy, etc
 
-
-
-https://brotochola.github.io/combustion_simulator/ 
-
+https://brotochola.github.io/combustion_simulator/
 
 -hold W to add water
 
@@ -22,3 +19,15 @@ https://brotochola.github.io/combustion_simulator/
 -G to turn gravity on and off
 
 -space bar to pause the physics engine
+
+---
+
+TO DO:
+
+-stress of constraints, and make them brake
+
+-integrate pixiJS
+
+-add grid system to get close particles
+
+-add UI

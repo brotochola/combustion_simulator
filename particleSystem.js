@@ -1,3 +1,6 @@
+//MATTER PIXI INTEGRATION
+//https://github.com/celsowhite/matter-pixi/tree/master
+
 class ParticleSystem {
   constructor(canvasId, width, height, Matter) {
     this.COUNTER = 0;
@@ -31,6 +34,7 @@ class ParticleSystem {
     // this.canvas.width = width;
     // this.canvas.height = height;
     this.particles = []; // array to hold all particles
+    this.compoundBodies = [];
 
     this.constraintsVisible = true;
     this.gooBuilding = false;
@@ -127,6 +131,7 @@ class ParticleSystem {
     window.onkeyup = (e) => {
       window.keyIsDown = null;
       console.log("letra", e.keyCode);
+      this.unHighlightAllParticles();
       if (e.keyCode == 32) {
         //space bar
         this.togglePause();
@@ -171,14 +176,28 @@ class ParticleSystem {
 
   runEngine() {
     this.render = Matter.Render.create({
+      // bounds: {
+      //   min: {
+      //     x: 500,
+      //     y: 0,
+      //   },
+      //   max: {
+      //     x: 1,
+      //     y: 1,
+      //   },
+      // },
       element: document.body,
       engine: this.engine,
       options: {
+        // bounds: { x: { max: 100, min: 0 } },
+        showStats: true,
+        // hasBounds: true,
         // pixelRatio: "auto",
         // showPositions: true,
         width: window.innerWidth,
         // showVertexNumbers: true,
         constraintIterations: 4,
+        positionIterations: 10,
         height: this.worldHeight,
         wireframes: false, // <-- important
         // showAngleIndicator: true,
@@ -190,8 +209,8 @@ class ParticleSystem {
       mouse: mouse,
       constraint: {
         // length: 100,
-        stiffness: 1,
-        damping: 0,
+        stiffness: 0.5,
+        damping: 0.5,
         render: {
           anchors: true,
           visible: true,
@@ -290,6 +309,64 @@ class ParticleSystem {
     return isColliding;
   }
 
+  createCompo(w, h) {
+    let arr = [];
+    let diam = this.config.wood.diameter;
+    let gap = diam - 2;
+    for (
+      let x = 100;
+      x < 100 + w * 2 * diam;
+      x += this.config.wood.diameter + gap
+    ) {
+      for (
+        let y = 100;
+        y < 100 + h * 2 * diam;
+        y += this.config.wood.diameter + gap
+      ) {
+        // class Particle {
+        //   constructor(
+        //     x,
+        //     y,
+        //     substance,
+        //     temperature,
+        //     particleSystem,
+        //     energyContained,
+        //     isStatic,
+        //     doNotAddBodyToWorld
+        //   ) {
+        const p = new Particle(x, y, "wood", 20, this, null, false, true);
+        p.isPartOfABody = true;
+        this.particles.push(p);
+        arr.push(p.body);
+      }
+    } //for
+    //create the body that contains all the particles:
+    let newBody = this.Matter.Body.create({
+      parts: arr,
+      isStatic: false,
+      mass: 0,
+      friction: 0.2,
+      // frictionAir: 0,
+      restitution: 0,
+      render: { visible: true },
+    });
+
+    this.compoundBodies.push(newBody);
+
+    this.world.add(this.engine.world, [newBody]);
+  }
+
+  removeEmptyCompoundBodies() {
+    for (let cb of this.compoundBodies) {
+      if (cb.parts.length == 1 && cb.parts[0] == cb) {
+        //remove the compound body from the world
+        this.world.remove(this.engine.world, cb);
+        //remove it from the array
+        this.compoundBodies = this.compoundBodies.filter((k) => k != cb);
+      }
+    }
+  }
+
   createStick(w, h) {
     let arr = [];
     let diam = this.config.wood.diameter;
@@ -310,6 +387,12 @@ class ParticleSystem {
       }
     } //for
     this.addAutomaticConnections(arr);
+  }
+
+  unHighlightAllParticles() {
+    for (let p of this.particles) {
+      p.unHighlight();
+    }
   }
 
   addClickListenerToCanvas() {
@@ -424,7 +507,7 @@ class ParticleSystem {
   addFloor() {
     var ground = Bodies.rectangle(0, this.worldHeight + 90, 3000, 200, {
       restitution: 0,
-      friction: 9,
+      friction: 0.5,
       slop: 0,
       label: "ground",
       render: {
@@ -442,7 +525,7 @@ class ParticleSystem {
       this.worldHeight,
       {
         restitution: 0,
-        friction: 9,
+        friction: 0.5,
         slop: 0,
         label: "ground",
         render: {
@@ -461,7 +544,7 @@ class ParticleSystem {
       this.worldHeight,
       {
         restitution: 0,
-        friction: 9,
+        friction: 0.5,
         slop: 0,
         label: "ground",
         render: {
@@ -693,12 +776,14 @@ class ParticleSystem {
           pointB: { x: 0, y: 0 },
           // length:
 
-          angularStiffness: 0.9,
+          angularStiffness: 1,
           stiffness: 1,
-          damping: 0.01,
+          damping: 0,
           render: {
             visible: true,
             anchors: false,
+            // strokeStyle: "rgba(255,255,255,0.3)",
+            // lineWidth: 1,
             strokeStyle:
               closePArticleSubstance == "wood"
                 ? makeRGBA(getRandomBrownishColor(0.1, 0.22))

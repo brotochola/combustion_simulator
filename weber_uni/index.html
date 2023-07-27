@@ -1,0 +1,238 @@
+<!DOCTYPE HTML>
+<!--
+	A molecular dynamics simulation in JavaScript, using an HTML5 canvas for graphics output
+	By Dan Schroeder, Weber State University, February 2013
+-->
+<html>
+
+<head>
+    <title>Molecular Dynamics Demo</title>
+    <style>
+        body {
+            background-color: #e0e0e0;
+            text-align: center;
+        }
+
+        /* gray background, center everything */
+        p {
+            margin-left: auto;
+            margin-right: auto;
+            width: 550px;
+        }
+
+        /* keep paragraphs narrow and centered */
+        input {
+            font-size: large;
+        }
+
+        /* makes buttons bigger */
+    </style>
+</head>
+
+<body>
+
+    <!--Here's the HTML to create the canvas, text, and GUI controls...-->
+    <h2>Molecular Dynamics</h2>
+
+    <p>By <a href="http://physics.weber.edu/schroeder/">Daniel V. Schroeder</a>,
+        <a href="http://physics.weber.edu">Physics Department</a>,
+        <a href="http://weber.edu">Weber State University</a></hp>
+
+    <p style="text-align:left">This page is intended to demonstrate the feasibility of using JavaScript and the
+        HTML5 canvas element for computationally intensive, animated physics simulations.
+        For a version of this simulation with more user interactivity,
+        <a href="http://physics.weber.edu/schroeder/software/demos/MDv0.html">click here</a>.
+        For a much more feature-rich molecular dynamics simulation with complete explanations, see
+        <a href="http://physics.weber.edu/schroeder/software/MDApplet.html">this Java version</a>.
+    </p>
+
+    <canvas id="theCanvas" width="500" height="500"></canvas>
+
+    <div>
+        <input id="startButton" type="button" onclick="startStop()" value="  Start  ">
+        <input id="fastButton" type="button" onclick="speedFactor(1.1)" value="Faster">
+        <input id="slowButton" type="button" onclick="speedFactor(0.9)" value="Slower">
+        <input id="fastButton" type="button" onclick="speedFactor(0)" value="Freeze">
+    </div>
+
+    <p>Gravity: <input id="gravSlider" type="range" min="0" max="0.1" step="0.001" value="0"></p>
+
+    <p>Steps per second: <span id="speedReadout">0</span></p>
+
+    <script>	// And here's the JavaScript to bring it to life...
+
+        // Global variables:	
+        var mobile = navigator.userAgent.match(/iPhone|iPad|iPod|Android|BlackBerry|Opera Mini|IEMobile/i)
+        var N = 2500;								// number of molecules
+        if (mobile) N = 80;							// since mobile devices are slower
+        var dt = 0.02;								// time step in natural units
+        var wallStiffness = 50;						// spring constant for bouncing off walls
+        var forceCutoff = 3.0;						// distance beyond which we set force=0
+        var forceCutoff2 = forceCutoff * forceCutoff;
+        var canvas = document.getElementById('theCanvas');
+        var context = canvas.getContext('2d');
+        var pxPerUnit = 2;							// molecule diameter in pixels
+        if (mobile) pxPerUnit = 20;
+        var boxWidth = canvas.width / pxPerUnit;	// width of box in natural units
+        var running = false;						// will be true when running
+        var startButton = document.getElementById('startButton');
+        var gravSlider = document.getElementById('gravSlider');
+        var speedReadout = document.getElementById('speedReadout');
+        var stepsPerFrame = 25;
+        var stepCount = 0;
+        var startTime = 0;
+
+        // Create the arrays of molecule positions, velocities, and accelerations:
+        var x = new Array(N), y = new Array(N);
+        var vx = new Array(N), vy = new Array(N);
+        var ax = new Array(N), ay = new Array(N);
+
+        // Place molecules in rows:
+        var neighborSpace = 1.5;					// initial distance between molecules
+        var nextX = neighborSpace;
+        var nextY = neighborSpace;
+        for (var i = 0; i < N; i++) {
+            x[i] = nextX; y[i] = nextY;
+            vx[i] = 0.0; vy[i] = 0.0;
+            ax[i] = 0.0; ay[i] = 0.0;
+            nextX += neighborSpace;
+            if (nextX > boxWidth - 1) {
+                nextX = neighborSpace;
+                nextY += neighborSpace;
+            }
+        }
+        paintCanvas();								// draw initial state
+
+        // Mysterious incantation that sometimes helps for smooth animation:
+        window.requestAnimFrame = (function (callback) {
+            return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+                function (callback) {
+                    window.setTimeout(callback, 1);		// second parameter is time in ms
+                };
+        })();
+
+        simulate();		// initializations are finished so let 'er rip!
+
+        // Simulate function executes a bunch of steps and then schedules another call to itself:
+        function simulate() {
+            if (running) {
+                // Execute a bunch of time steps:
+                for (var step = 0; step < stepsPerFrame; step++) {
+                    doStep();
+                }
+                paintCanvas();
+                stepCount += stepsPerFrame;
+                var elapsedTime = ((new Date()).getTime() - startTime) / 1000;	// time in seconds
+                speedReadout.innerHTML = Number(stepCount / elapsedTime).toFixed(0);
+            }
+            // schedule the next animation frame:
+            //requestAnimFrame(function() { simulate(); });		// smoother on Safari
+            window.setTimeout(simulate, 1);					// faster; smoother on Firefox
+        }
+
+        // Execute a single time step (Verlet algorithm):
+        function doStep() {
+            for (var i = 0; i < N; i++) {
+                x[i] += vx[i] * dt + 0.5 * ax[i] * dt * dt;
+                y[i] += vy[i] * dt + 0.5 * ay[i] * dt * dt;
+                vx[i] += 0.5 * ax[i] * dt;
+                vy[i] += 0.5 * ay[i] * dt;
+            }
+            computeAccelerations();
+            for (var i = 0; i < N; i++) {
+                vx[i] += 0.5 * ax[i] * dt;
+                vy[i] += 0.5 * ay[i] * dt;
+            }
+        }
+
+        // Compute accelerations of all molecules:
+        function computeAccelerations() {
+            var dx, dy, dx2, dy2, rSquared, rSquaredInv, attract, repel, fOverR, fx, fy;
+            var g = Number(gravSlider.value);
+            // first check for bounces off walls:
+            for (var i = 0; i < N; i++) {
+                if (x[i] < 0.5) {
+                    ax[i] = wallStiffness * (0.5 - x[i]);
+                } else
+                    if (x[i] > (boxWidth - 0.5)) {
+                        ax[i] = wallStiffness * (boxWidth - 0.5 - x[i]);
+                    } else
+                        ax[i] = 0.0;
+                if (y[i] < 0.5) {
+                    ay[i] = (wallStiffness * (0.5 - y[i]));
+                } else
+                    if (y[i] > (boxWidth - 0.5)) {
+                        ay[i] = (wallStiffness * (boxWidth - 0.5 - y[i]));
+                    } else
+                        ay[i] = 0;
+                ay[i] -= g;				// add gravity if any
+            }
+            //pressure = wallForce / (4*boxWidth);
+            // now compute interaction forces (Lennard-Jones potential):
+            for (var i = 0; i < N; i++) {
+                for (var j = 0; j < i; j++) {
+                    dx = x[i] - x[j];
+                    dx2 = dx * dx;
+                    if (dx2 < forceCutoff2) {  // make sure they're close enough to bother
+                        dy = y[i] - y[j];
+                        dy2 = dy * dy;
+                        if (dy2 < forceCutoff2) {
+                            rSquared = dx2 + dy2;
+                            if (rSquared < forceCutoff2) {
+                                rSquaredInv = 1.0 / rSquared;
+                                attract = rSquaredInv * rSquaredInv * rSquaredInv;
+                                repel = attract * attract;
+                                //tempPE += (4.0 * (repel - attract)) - pEatCutoff;
+                                fOverR = 24.0 * ((2.0 * repel) - attract) * rSquaredInv;
+                                fx = fOverR * dx;
+                                fy = fOverR * dy;
+                                ax[i] += fx;  // add this force on to i's acceleration (m = 1)
+                                ay[i] += fy;
+                                ax[j] -= fx;  // Newton's 3rd law
+                                ay[j] -= fy;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clear the canvas and draw all the molecules:
+        function paintCanvas() {
+            context.fillStyle = '#000000';		// black
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = '#00ff00';		// green
+            for (var i = 0; i < N; i++) {
+                var pixelX = x[i] * pxPerUnit;
+                var pixelY = canvas.height - (y[i] * pxPerUnit);
+                context.beginPath();
+                context.arc(pixelX, pixelY, pxPerUnit / 2, 0, 2 * Math.PI);
+                context.fill();
+            }
+        }
+
+        // Function to start or pause the simulation:
+        function startStop() {
+            running = !running;
+            if (running) {
+                startButton.value = " Pause ";
+                stepCount = 0;
+                startTime = (new Date()).getTime();
+            } else {
+                startButton.value = "Resume";
+            }
+        }
+
+        // Function to change all speeds by a given factor (called by button presses):
+        function speedFactor(factor) {
+            for (var i = 0; i < N; i++) {
+                vx[i] *= factor;
+                vy[i] *= factor;
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>

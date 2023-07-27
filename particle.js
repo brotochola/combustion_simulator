@@ -8,7 +8,8 @@ class Particle {
     temperature,
     particleSystem,
     energyContained,
-    isStatic
+    isStatic,
+    doNotAddBodyToWorld
   ) {
     this.isStatic = isStatic;
     this.particleSystem = particleSystem;
@@ -44,7 +45,7 @@ class Particle {
 
     this.defaultColor = defaultColors[this.substance];
 
-    this.createBody();
+    this.createBody(doNotAddBodyToWorld);
 
     this.nearParticles = [];
 
@@ -119,7 +120,7 @@ class Particle {
     if (this.temperature < -272) this.temperature = -272;
   }
 
-  createBody() {
+  createBody(doNotAddBodyToWorld) {
     let renderTypes = {
       wood: {
         fillStyle: makeRGBA(this.defaultColor.fillStyle),
@@ -142,9 +143,9 @@ class Particle {
 
     //for the simulation, not to calculate energies:
     let masses = {
-      wood: 1,
-      woodGas: 0.0001,
-      water: 1,
+      wood: 0,
+      woodGas: 0,
+      water: 0,
     };
     let bodyOptions = {
       restitution: this.substance == "wood" ? 0.1 : 0.1,
@@ -182,7 +183,7 @@ class Particle {
     this.body.constraints = []; //i need to keep track which constraints each body has
     this.body.particle = this;
 
-    this.world.add(this.engine.world, [this.body]);
+    if (!doNotAddBodyToWorld) this.world.add(this.engine.world, [this.body]);
   }
 
   getAttractionFactorAccordingToTemperature() {
@@ -277,7 +278,17 @@ class Particle {
       this.world.remove(this.engine.world, constr);
     }
 
-    this.world.remove(this.engine.world, this.body);
+    if (this.isPartOfABody) {
+      //REMOVE THIS PARTICLE FROM THE BODY
+      this.body.parent.parts = this.body.parent.parts.filter(
+        (k) => k != this.body
+      );
+      //CHECK IF IT'S EMPTY
+      this.particleSystem.removeEmptyCompoundBodies();
+    } else {
+      this.world.remove(this.engine.world, this.body);
+    }
+
     this.particleSystem.particles = this.particleSystem.particles.filter(
       (k) => k.body.id != this.body.id
     );
@@ -481,7 +492,7 @@ class Particle {
 
   getNearParticles() {
     let arr = [];
-    for (let p of this.particles) {
+    for (let p of this.particleSystem.particles) {
       let difX = Math.abs(this.body.position.x - p.body.position.x);
       let difY = Math.abs(this.body.position.y - p.body.position.y);
       // let difY
