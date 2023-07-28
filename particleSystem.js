@@ -3,6 +3,8 @@
 
 class ParticleSystem {
   constructor(canvasId, width, height, Matter) {
+    this.pixiApp;
+
     this.COUNTER = 0;
 
     this.config = {
@@ -30,7 +32,8 @@ class ParticleSystem {
     this.engine = Matter.Engine.create();
     this.world = Matter.World;
 
-    this.worldHeight = window.innerHeight - 100;
+    this.worldHeight = height || window.innerHeight - 100;
+    this.worldWidth = width || this.worldWidth;
 
     // this.canvas = document.getElementById(canvasId);
     // this.context = this.canvas.getContext("2d");
@@ -41,6 +44,9 @@ class ParticleSystem {
 
     this.constraintsVisible = true;
     this.gooBuilding = false;
+
+    this.createPixiStage();
+
     this.createGrid();
 
     this.addFloor();
@@ -63,6 +69,35 @@ class ParticleSystem {
     // Matter.Events.on(this.engine, "collisionActive", (e) => {
     //   this.collisionHandler(e);
     // });
+  }
+
+  createPixiStage(cb) {
+    this.renderer = PIXI.autoDetectRenderer(this.worldWidth, this.worldHeight, {
+      backgroundColor: "transparent",
+      antialias: true,
+      transparent: true,
+      resolution: 1,
+      autoresize: false,
+    });
+    this.loader = PIXI.Loader.shared;
+    this.pixiApp = new PIXI.Application({
+      width: this.worldWidth,
+      height: this.worldHeight,
+    });
+
+    // this.loader.add("water", "water.png");
+    // this.loader.add("wood", "wood.png");
+    this.loader.load((loader, resources) => {
+      this.res = resources;
+
+      if (cb instanceof Function) cb();
+    });
+
+    this.canvas = this.pixiApp.view;
+    this.canvas.id = "pixiCanvas";
+    // this.canvas.onclick = (e) => this.handleClickOnCanvas(e);
+    // this.canvas.onmousemove = (e) => this.handleMouseMoveOnCanvas(e);
+    document.body.appendChild(this.canvas);
   }
 
   collisionHandler(e) {
@@ -198,7 +233,7 @@ class ParticleSystem {
         // hasBounds: true,
         // pixelRatio: "auto",
         // showPositions: true,
-        width: window.innerWidth,
+        width: this.worldWidth,
         // showVertexNumbers: true,
         constraintIterations: 4,
         positionIterations: 10,
@@ -407,7 +442,7 @@ class ParticleSystem {
       i++
     ) {
       this.grid[i] = [];
-      for (let j = -2; j < window.innerWidth / this.CELL_SIZE + 2; j++) {
+      for (let j = -2; j < this.worldWidth / this.CELL_SIZE + 2; j++) {
         this.grid[i][j] = new Cell(i, j, this.CELL_SIZE, this.grid);
       }
     }
@@ -557,7 +592,7 @@ class ParticleSystem {
     );
 
     var rightWall = Bodies.rectangle(
-      window.innerWidth + 90,
+      this.worldWidth + 90,
       this.worldHeight / 2,
       200,
       this.worldHeight,

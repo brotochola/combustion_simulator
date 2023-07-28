@@ -46,6 +46,7 @@ class Particle {
     this.defaultColor = defaultColors[this.substance];
 
     this.createBody(doNotAddBodyToWorld);
+    this.createCircleInPixi();
 
     this.nearParticles = [];
 
@@ -276,7 +277,11 @@ class Particle {
   remove(opt) {
     // console.log("removing");
 
-    this.cell.removeMe(this);
+    try {
+      this.cell.removeMe(this);
+    } catch (e) {
+      console.warn("no cell");
+    }
 
     for (let constr of this.body.constraints) {
       this.world.remove(this.engine.world, constr);
@@ -291,6 +296,7 @@ class Particle {
       this.particleSystem.removeEmptyCompoundBodies();
     } else {
       this.world.remove(this.engine.world, this.body);
+      this.particleSystem.pixiApp.stage.removeChild(this.graphics);
     }
 
     this.particleSystem.particles = this.particleSystem.particles.filter(
@@ -633,6 +639,10 @@ class Particle {
   }
   render() {
     // Render the particle on the canvas
+
+    this.graphics.x = this.x;
+    this.graphics.y = this.y;
+
     if (this.onFire) {
       if (this.substance == "wood") {
         this.drawFlamesForWood();
@@ -654,7 +664,13 @@ class Particle {
       // return;
     }
   }
-
+  createCircleInPixi() {
+    this.graphics = new PIXI.Graphics();
+    this.graphics.beginFill("0xFFFFFF");
+    this.graphics.drawCircle(0, 0, this.diameter);
+    this.graphics.endFill();
+    this.particleSystem.pixiApp.stage.addChild(this.graphics);
+  }
   drawWater() {
     let context = this.particleSystem.liquidContext;
     context.beginPath();

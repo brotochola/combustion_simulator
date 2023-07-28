@@ -2113,6 +2113,7 @@
             // find the convex hull of all parts to set on the parent body
             if (autoHull) {
               var vertices = [];
+
               for (i = 0; i < parts.length; i++) {
                 vertices = vertices.concat(parts[i].vertices);
               }
