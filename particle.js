@@ -46,7 +46,7 @@ class Particle {
     this.defaultColor = defaultColors[this.substance];
 
     this.createBody(doNotAddBodyToWorld);
-    this.createCircleInPixi();
+    if (this.substance != "woodGas") this.createCircleInPixi();
 
     this.nearParticles = [];
 
@@ -125,9 +125,7 @@ class Particle {
   createBody(doNotAddBodyToWorld) {
     let renderTypes = {
       wood: {
-        fillStyle: makeRGBA(this.defaultColor.fillStyle),
-        lineWidth: 0, //this.diameter * 2,
-        strokeStyle: makeRGBA(this.defaultColor.strokeStyle),
+        visible: false,
       },
       woodGas: {
         visible: false,
@@ -640,8 +638,12 @@ class Particle {
   render() {
     // Render the particle on the canvas
 
-    this.graphics.x = this.x;
-    this.graphics.y = this.y;
+    if (this.substance != "woodGas") {
+      this.graphics.x = this.x;
+      this.graphics.y = this.y;
+    } else {
+      //wood gas
+    }
 
     if (this.onFire) {
       if (this.substance == "wood") {
@@ -659,8 +661,8 @@ class Particle {
       this.drawWater();
     }
 
-    if (this.highlighted) {
-      this.body.render.fillStyle = "white";
+    if (this.highlighted && this.substance != "woodGas") {
+      this.graphics.tint = "0xffffff";
       // return;
     }
   }
@@ -672,25 +674,33 @@ class Particle {
     this.particleSystem.pixiApp.stage.addChild(this.graphics);
   }
   drawWater() {
-    let context = this.particleSystem.liquidContext;
-    context.beginPath();
-    context.arc(this.x, this.y, this.diameter, 0, 2 * Math.PI, false);
-    context.fillStyle = "#1133ff";
-    context.fill();
+    // let context = this.particleSystem.liquidContext;
+    // context.beginPath();
+    // context.arc(this.x, this.y, this.diameter, 0, 2 * Math.PI, false);
+    // context.fillStyle = "#1133ff";
+    // context.fill();
 
-    let strokeCol = (this.temperature / this.evaporationTemperature) * 255;
-    if (strokeCol > 255) strokeCol = 255;
-    if (strokeCol < 0) strokeCol = 0;
+    let tempRatio = this.temperature / this.evaporationTemperature;
+    if (tempRatio > 1) tempRatio = 1;
+    else if (tempRatio < 0) tempRatio = 0;
+
+    let color = colorMixer([230, 255, 230], [11, 15, 255], tempRatio);
+
+    this.graphics.tint = rgba2hex2(makeRGBA(color));
+
+    // let strokeCol = (this.temperature / this.evaporationTemperature) * 255;
+    // if (strokeCol > 255) strokeCol = 255;
+    // if (strokeCol < 0) strokeCol = 0;
 
     // context.lineWidth = 4;
 
-    context.strokeStyle = makeRGBA({
-      r: strokeCol,
-      g: strokeCol,
-      b: 255,
-      a: 1,
-    });
-    context.stroke();
+    // context.strokeStyle = makeRGBA({
+    //   r: strokeCol,
+    //   g: strokeCol,
+    //   b: 255,
+    //   a: 1,
+    // });
+    // context.stroke();
   }
 
   setColorAccordingToTemperature() {
@@ -700,16 +710,23 @@ class Particle {
     let tempRatio = this.temperature / this.burningTemperature;
     let newFillR = tempRatio * (255 - fillR) + fillR;
 
-    let newStrokeR = tempRatio * (255 - strokeR) + strokeR;
+    // let newStrokeR = tempRatio * (255 - strokeR) + strokeR;
 
-    this.body.render.fillStyle = makeRGBA({
+    // this.body.render.fillStyle = makeRGBA({
+    //   ...this.defaultColor.fillStyle,
+    //   r: newFillR,
+    // });
+    let rgba = makeRGBA({
       ...this.defaultColor.fillStyle,
       r: newFillR,
     });
 
-    this.body.render.strokeStyle = makeRGBA({
-      ...this.defaultColor.strokeStyle,
-      r: newStrokeR,
-    });
+    let newColor = rgba2hex2(rgba);
+    this.graphics.tint = newColor;
+
+    // this.body.render.strokeStyle = makeRGBA({
+    //   ...this.defaultColor.strokeStyle,
+    //   r: newStrokeR,
+    // });
   }
 }
