@@ -118,8 +118,6 @@ class Particle {
       // this.state = "liquid";
       this.condense();
     }
-
-    if (this.temperature < -272) this.temperature = -272;
   }
 
   createBody(doNotAddBodyToWorld) {
@@ -232,7 +230,7 @@ class Particle {
     if (this.substance == "wood") this.thermalConductivity = 0.000025;
     else if (this.substance == "woodGas")
       this.thermalConductivity = 0.0000025; //10x less
-    else if (this.substance == "water") this.thermalConductivity = 0.000075; //water has 3x the thermal conductivity of wood
+    else if (this.substance == "water") this.thermalConductivity = 0.0075; //water has 3x the thermal conductivity of wood
   }
   calculateEneryContained(energyContained) {
     //energy contained in joules
@@ -331,8 +329,6 @@ class Particle {
         : this.originalEnergycontained * 0.1;
     let howMuchEnergyGetsActuallyLiberated = minEnergyToBeLiberated;
 
-    this.nearParticles = this.getNearParticles();
-
     ////////
     //FIX ME: THE ENERGY TRANSFERED FROM A BURNING PARTICLE TO THE REST
     // SHOULD BE ACCORDING TO THE DISTANCE BETWEEN THEM
@@ -375,21 +371,31 @@ class Particle {
 
   transferTemperatureToSurroundingParticles() {
     for (const particle of this.nearParticles) {
-      if (particle !== this) {
-        const distance = Math.sqrt(
-          Math.pow(this.x - particle.x, 2) + Math.pow(this.y - particle.y, 2)
-        );
+      if (particle == this) continue;
+      const distance = Math.sqrt(
+        Math.pow(this.x - particle.x, 2) + Math.pow(this.y - particle.y, 2)
+      );
+      // debugger;
 
-        const avg = (this.temperature + particle.temperature) / 2;
-        const avgThermalConductivity =
-          (this.thermalConductivity + particle.thermalConductivity) / 2;
-        if (this.temperature > particle.temperature) {
-          this.temperature -= (avg / distance) * avgThermalConductivity;
-          particle.temperature += (avg / distance) * avgThermalConductivity;
-        } else {
-          this.temperature += (avg / distance) * avgThermalConductivity;
-          particle.temperature -= (avg / distance) * avgThermalConductivity;
-        }
+      const avg = (this.temperature + particle.temperature) / 2;
+      const avgThermalConductivity =
+        (this.thermalConductivity + particle.thermalConductivity) / 2;
+
+      // console.log(
+      //   "transfering temp",
+      //   this.temperature,
+      //   particle.temperature,
+      //   (avg / distance) * avgThermalConductivity
+      // );
+
+      let tempToTransfer = (Math.abs(avg) / distance) * avgThermalConductivity;
+
+      if (this.temperature > particle.temperature) {
+        this.temperature -= tempToTransfer;
+        particle.temperature += tempToTransfer;
+      } else {
+        this.temperature += tempToTransfer;
+        particle.temperature -= tempToTransfer;
       }
     }
   }
@@ -429,6 +435,10 @@ class Particle {
 
     this.cellX = Math.floor(this.x / this.particleSystem.CELL_SIZE);
     this.cellY = -Math.floor(-this.y / this.particleSystem.CELL_SIZE);
+    if (isNaN(this.cellY)) {
+      console.warn(this);
+      debugger;
+    }
     let newCell = (this.particleSystem.grid[this.cellY] || [])[this.cellX];
 
     if (this.cell && newCell && this.cell == newCell) {
@@ -467,17 +477,24 @@ class Particle {
     return arr;
   }
 
-  update(COUNTER) {
-    this.COUNTER = COUNTER;
-
+  manageTemperature() {
+    this.transferTemperatureToSurroundingParticles();
+    this.stateAccordingToTemperature();
+    if (this.temperature < -272) this.temperature = -272;
     // console.log(this.temperature, this.substance);
     if (this.burningTemperature && this.temperature > this.burningTemperature) {
       this.burn();
+      this.temperature = this.burningTemperature + 1;
     } else {
       this.onFire = false;
     }
+  }
 
-    this.stateAccordingToTemperature();
+  update(COUNTER) {
+    this.COUNTER = COUNTER;
+
+    this.lastY = this.y;
+    this.lastX = this.x;
 
     this.x = this.body.position.x;
     this.y = this.body.position.y;
@@ -489,7 +506,7 @@ class Particle {
       this.remove({ leaveAshes: true });
     }
 
-    this.transferTemperatureToSurroundingParticles();
+    this.manageTemperature();
 
     // for (const particle of particles) {
     //     if (particle !== this) {
@@ -511,7 +528,7 @@ class Particle {
     }
 
     this.checkIfItWentToHigh();
-
+    this.nearParticles = this.getNearParticles();
     this.render();
   }
   checkIfItWentToHigh() {

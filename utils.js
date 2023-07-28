@@ -69,7 +69,7 @@ function rgba2hex(orig) {
   if (alpha !== "") {
     a = alpha;
   } else {
-    a = 01;
+    a = 0o1;
   }
   // multiply before convert to HEX
   a = ((a * 255) | (1 << 8)).toString(16).slice(1);

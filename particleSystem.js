@@ -834,7 +834,7 @@ class ParticleSystem {
           stiffness: 1,
           damping: 0,
           render: {
-            visible: true,
+            visible: false,
             anchors: false,
             // strokeStyle: "rgba(255,255,255,0.3)",
             // lineWidth: 1,
@@ -865,11 +865,7 @@ class ParticleSystem {
       } //for
     } //for
 
-    console.log(
-      "#we added ",
-      howManyConnectionsWeMadeNow,
-      "new constraints to wood particles"
-    );
+    console.log("#we added ", howManyConnectionsWeMadeNow, " contraints");
   }
 
   toggleGooBuilding() {
