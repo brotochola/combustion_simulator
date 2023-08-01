@@ -283,6 +283,8 @@ class Particle {
       this.world.remove(this.engine.world, constr);
     }
 
+    this.particleSystem.pixiApp.stage.removeChild(this.graphics);
+
     if (this.isPartOfABody) {
       //REMOVE THIS PARTICLE FROM THE BODY
       this.body.parent.parts = this.body.parent.parts.filter(
@@ -292,7 +294,6 @@ class Particle {
       this.particleSystem.removeEmptyCompoundBodies();
     } else {
       this.world.remove(this.engine.world, this.body);
-      this.particleSystem.pixiApp.stage.removeChild(this.graphics);
     }
 
     this.particleSystem.particles = this.particleSystem.particles.filter(
@@ -453,6 +454,7 @@ class Particle {
       this.cell.addMe(this);
     } catch (e) {
       console.error("this particle is not in any cell", this.cellX, this.cellY);
+      this.remove();
       // debugger;
     }
 
@@ -691,6 +693,13 @@ class Particle {
     this.particleSystem.pixiApp.stage.addChild(this.graphics);
   }
   drawWater() {
+    /*
+        use this shader:
+        https://www.shadertoy.com/view/wtfcWS
+
+    */
+
+    //////////////////
     // let context = this.particleSystem.liquidContext;
     // context.beginPath();
     // context.arc(this.x, this.y, this.diameter, 0, 2 * Math.PI, false);

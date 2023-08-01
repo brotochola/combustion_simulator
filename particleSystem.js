@@ -236,7 +236,7 @@ class ParticleSystem {
         width: this.worldWidth,
         // showVertexNumbers: true,
         constraintIterations: 4,
-        positionIterations: 10,
+        positionIterations: 20,
         height: this.worldHeight,
         wireframes: false, // <-- important
         // showAngleIndicator: true,
@@ -659,6 +659,40 @@ class ParticleSystem {
     for (const particle of this.particles) {
       particle.update(this.COUNTER);
     }
+
+    this.checkIfSomeConstraintIsBroken();
+  }
+  checkIfSomeConstraintIsBroken() {
+    if (this.COUNTER % 2 == 0) return;
+    let maxStress = 10;
+    let minStress = 0.1;
+    // let arrOfBodiesToReAttach = [];
+    for (let c of this.engine.world.constraints) {
+      if (c.label == "Mouse Constraint") continue;
+      let stress = c.length / c.currentLength;
+
+      if (stress > maxStress || stress < minStress) {
+        // if (Math.abs(c.lengthDifference) > this.config.wood.diameter * 10) {
+        console.log("## removing constraint ", c.id);
+
+        //get all bodies connected to this constraint
+        for (let c1 of c.bodyA.constraints) {
+          // console.log("### removing inner level constraint", c1.id);
+          this.world.remove(this.engine.world, c1);
+        }
+
+        for (let c1 of c.bodyB.constraints) {
+          // console.log("### removing inner level constraint", c1.id);
+          this.world.remove(this.engine.world, c1);
+        }
+        c.bodyA.constraints = [];
+        c.bodyB.constraints = [];
+        // arrOfBodiesToReAttach.push(c.bodyA.particle);
+        // arrOfBodiesToReAttach.push(c.bodyB.particle);
+
+        this.world.remove(this.engine.world, c);
+      }
+    } //for
   }
   clearFireCanvas() {
     this.fireContext.clearRect(
@@ -830,8 +864,8 @@ class ParticleSystem {
           pointB: { x: 0, y: 0 },
           // length:
 
-          angularStiffness: 1,
-          stiffness: 1,
+          angularStiffness: 0.9,
+          stiffness: 0.9,
           damping: 0,
           render: {
             visible: false,

@@ -5057,6 +5057,13 @@
               normalVelocity,
               relativeVelocity;
 
+            ////FACU
+            constraint.lengthDifference = difference;
+            // constraint.stress=
+            constraint.resistanceTotal = resistanceTotal;
+            constraint.currentLength = currentLength;
+            constraint.forceApplied = force;
+
             if (damping > 0) {
               var zero = Vector.create();
               normal = Vector.div(delta, currentLength);
@@ -5128,6 +5135,9 @@
               bodyB.constraintImpulse.angle += torque;
               bodyB.angle += torque;
             }
+
+            //facu
+            constraint.torqueApplied = torque;
           };
 
           /**

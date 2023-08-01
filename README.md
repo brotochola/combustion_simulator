@@ -24,10 +24,16 @@ https://brotochola.github.io/combustion_simulator/
 
 TO DO:
 
--stress of constraints, and make them brake
+- stress of constraints, and make them brake
 
--integrate pixiJS
+- use filters/shaders for watery effect
 
--add grid system to get close particles
+- add UI
 
--add UI
+- save / load
+
+---
+
+READY:
+
+- add grid system to get close particles
