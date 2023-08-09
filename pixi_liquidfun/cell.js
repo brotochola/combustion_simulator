@@ -1,5 +1,6 @@
 class Cell {
-  constructor(y, x, cellWidth) {
+  constructor(y, x, cellWidth, grid) {
+    this.grid = grid;
     this.cellWidth = cellWidth;
     this.pos = { x: x * cellWidth, y: y * cellWidth };
     this.x = x;
@@ -41,73 +42,73 @@ class Cell {
     let x = this.x;
     let y = this.y;
     try {
-      arrRet.push(grid[y - 1][x - 1]);
+      arrRet.push(this.grid[y - 1][x - 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y - 1][x]);
+      arrRet.push(this.grid[y - 1][x]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y - 1][x + 1]);
+      arrRet.push(this.grid[y - 1][x + 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y][x - 1]);
+      arrRet.push(this.grid[y][x - 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y][x + 1]);
+      arrRet.push(this.grid[y][x + 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y + 1][x - 1]);
+      arrRet.push(this.grid[y + 1][x - 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y + 1][x]);
+      arrRet.push(this.grid[y + 1][x]);
     } catch (e) {}
     try {
-      arrRet.push(grid[y + 1][x + 1]);
+      arrRet.push(this.grid[y + 1][x + 1]);
     } catch (e) {}
 
     if (y == 0) {
       try {
-        arrRet.push(grid[grid.length - 1][x - 1]);
+        arrRet.push(this.grid[this.grid.length - 1][x - 1]);
       } catch (e) {}
       try {
-        arrRet.push(grid[grid.length - 1][x]);
+        arrRet.push(this.grid[this.grid.length - 1][x]);
       } catch (e) {}
       try {
-        arrRet.push(grid[grid.length - 1][x + 1]);
+        arrRet.push(this.grid[this.grid.length - 1][x + 1]);
       } catch (e) {}
     }
-    if (y == grid.length - 1) {
+    if (y == this.grid.length - 1) {
       try {
-        arrRet.push(grid[0][x - 1]);
+        arrRet.push(this.grid[0][x - 1]);
       } catch (e) {}
       try {
-        arrRet.push(grid[0][x]);
+        arrRet.push(this.grid[0][x]);
       } catch (e) {}
       try {
-        arrRet.push(grid[0][x + 1]);
+        arrRet.push(this.grid[0][x + 1]);
       } catch (e) {}
     }
 
     if (x == 0) {
       try {
-        arrRet.push(grid[y - 1][grid[0].length - 1]);
+        arrRet.push(this.grid[y - 1][this.grid[0].length - 1]);
       } catch (e) {}
       try {
-        arrRet.push(grid[y][grid[0].length - 1]);
+        arrRet.push(this.grid[y][this.grid[0].length - 1]);
       } catch (e) {}
       try {
-        arrRet.push(grid[y + 1][grid[0].length - 1]);
+        arrRet.push(this.grid[y + 1][this.grid[0].length - 1]);
       } catch (e) {}
     }
-    if (x == grid[0].length - 1) {
+    if (x == this.grid[0].length - 1) {
       try {
-        arrRet.push(grid[y - 1][0]);
+        arrRet.push(this.grid[y - 1][0]);
       } catch (e) {}
       try {
-        arrRet.push(grid[y][0]);
+        arrRet.push(this.grid[y][0]);
       } catch (e) {}
       try {
-        arrRet.push(grid[y + 1][0]);
+        arrRet.push(this.grid[y + 1][0]);
       } catch (e) {}
     }
 

@@ -8,9 +8,9 @@ class ParticleSystem {
     this.world;
     this.FRAMENUM = 0;
     this.grid = [];
-    this.CELL_SIZE = 30;
-    this.PARTICLE_WIDTH = 6;
 
+    this.PARTICLE_WIDTH = 10;
+    this.CELL_SIZE = this.PARTICLE_WIDTH * 5;
     this.particles = [];
     this.canvas;
     this.renderer;
@@ -23,17 +23,18 @@ class ParticleSystem {
     this.gravity;
     this.psd; //particle system def
     this.particleSystemObject;
+    this.gravityYVal = -1000;
   }
 
-  createGrid = () => {
+  createGrid() {
     for (let i = 0; i < window.innerWidth / this.CELL_SIZE; i++) {
       this.grid[i] = [];
       for (let j = 0; j < window.innerHeight / this.CELL_SIZE; j++) {
-        this.grid[i][j] = new Cell(i, j, this.CELL_SIZE);
+        this.grid[i][j] = new Cell(i, j, this.CELL_SIZE, this.grid);
       }
     }
     return this.grid;
-  };
+  }
 
   createPixiStage(cb) {
     this.renderer = PIXI.autoDetectRenderer(this.width, this.height, {
@@ -58,21 +59,61 @@ class ParticleSystem {
     });
   }
 
-  createWater = () => {
+  createWater() {
     let circle = new b2CircleShape();
     circle.position.Set(window.innerWidth / 2, -window.innerHeight / 2);
-    circle.radius = 100;
+    circle.radius = 200;
     let pgd = new b2ParticleGroupDef();
-    // console.log("#particle group", pgd)
-    // pgd.groupFlags = b2_rigidParticleGroup | b2_solidParticleGroup;
+
+    console.log("#particle group", pgd);
+    // pgd.groupFlags = b2_springParticle; //b2_rigidParticleGroup | b2_solidParticleGroup;
     pgd.shape = circle;
-    pgd.color.Set(255, 0, 0, 255);
+    // pgd.color.Set(255, 0, 0, 255);
     this.wateryGroup = this.particleSystemObject.CreateParticleGroup(pgd);
 
     for (let i = 0; i < this.wateryGroup.GetParticleCount(); i++) {
       this.particles.push(new Particle(null, null, this, "water"));
     }
-  };
+  }
+
+  createParticleGroupForCustomParticles() {}
+
+  createOneParticleOfWater() {
+    let circle = new b2CircleShape();
+    circle.position.Set(window.innerWidth / 2, -100);
+    circle.radius = this.PARTICLE_WIDTH;
+    let pgd = new b2ParticleGroupDef();
+    // console.log("#particle group", pgd)
+    pgd.groupFlags = b2_elasticParticle; // b2_viscousParticle;
+    // pgd.flags = b2_elasticParticle;
+    pgd.shape = circle;
+    // pgd.color.Set(255, 0, 0, 255);
+    let group = this.particleSystemObject.CreateParticleGroup(pgd);
+
+    for (let i = 0; i < group.GetParticleCount(); i++) {
+      this.particles.push(new Particle(null, null, this, "water"));
+    }
+  }
+
+  createOneParticleOfSteam() {
+    let circle = new b2CircleShape();
+    circle.position.Set(
+      window.innerWidth / 2 + Math.random() * 10,
+      -window.innerHeight + Math.random() * 10
+    );
+    circle.radius = this.PARTICLE_WIDTH / 2.5;
+    let pgd = new b2ParticleGroupDef();
+    // console.log("#particle group", pgd)
+    pgd.groupFlags = b2_zombieParticle;
+    pgd.shape = circle;
+    // pgd.color.Set(255, 0, 0, 255);
+    let group = this.particleSystemObject.CreateParticleGroup(pgd);
+    let count = group.GetParticleCount();
+    // console.log(count);
+    for (let i = 0; i < count; i++) {
+      this.particles.push(new Particle(null, null, this, "steam", group));
+    }
+  }
 
   createPieceOfWood() {
     //bloque azul rigido
@@ -103,6 +144,8 @@ class ParticleSystem {
       this.canvas.id = "renderCanvas";
       this.canvas.onclick = (e) => this.handleClickOnCanvas(e);
       this.canvas.onmousemove = (e) => this.handleMouseMoveOnCanvas(e);
+      this.canvas.onmousedown = (e) => (this.mousePressed = true);
+      this.canvas.onmouseup = (e) => this.handleMouseUp();
       document.body.appendChild(this.canvas);
       this.createBox2DWorld();
       this.createFloorAndObjects();
@@ -111,8 +154,29 @@ class ParticleSystem {
       this.gameLoop();
     });
   }
+  handleMouseUp() {
+    this.mousePressed = false;
+    this.unHighlightAllParticles();
+  }
+  unHighlightAllParticles() {
+    for (let p of this.particles) {
+      p.unHighlight();
+    }
+  }
 
-  handleMouseMoveOnCanvas() {}
+  handleMouseMoveOnCanvas(e) {
+    if (!this.mousePressed) return;
+    this.unHighlightAllParticles();
+    let x = e.offsetX;
+    let y = e.offsetY;
+
+    let cellX = Math.floor(x / this.CELL_SIZE);
+    let cellY = Math.floor(y / this.CELL_SIZE);
+    let cell = this.grid[cellX][cellY];
+    for (let p of cell.particlesHere) {
+      p.highlight();
+    }
+  }
   handleClickOnCanvas() {}
 
   createFloorAndObjects = () => {
@@ -221,7 +285,7 @@ class ParticleSystem {
   };
 
   createBox2DWorld = () => {
-    this.gravity = new b2Vec2(0, -1000);
+    this.gravity = new b2Vec2(0, this.gravityYVal);
     this.world = new b2World(this.gravity);
     window.world = this.world;
   };
@@ -243,6 +307,7 @@ class ParticleSystem {
       let system = this.world.particleSystems[i];
 
       let particlesFromLiquidFun = system.GetPositionBuffer();
+      let velocities = system.GetVelocityBuffer();
 
       // let  color = system.GetColorBuffer();
       // let  maxParticles = particlesFromLiquidFun.length
@@ -251,7 +316,10 @@ class ParticleSystem {
         if (this.particles[i * 0.5]) {
           let x = particlesFromLiquidFun[i];
           let y = particlesFromLiquidFun[i + 1];
-          this.particles[i * 0.5].update(x, y);
+
+          let velX = velocities[i];
+          let velY = velocities[i + 1];
+          this.particles[i * 0.5].update(x, y, velX, velY);
         }
       }
     }

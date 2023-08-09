@@ -865,7 +865,7 @@ class ParticleSystem {
           // length:
 
           angularStiffness: 0.9,
-          stiffness: 0.9,
+          stiffness: 1,
           damping: 0,
           render: {
             visible: false,
